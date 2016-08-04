@@ -29,10 +29,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import struct.ImageProperties;
+import ca.osmcanada.osvuploadr.struct.ImageProperties;
+import com.drew.metadata.exif.ExifSubIFDDirectory;
+import java.util.Date;
 
 /**
  *
@@ -71,6 +72,24 @@ public class JPMain extends javax.swing.JPanel {
         String username = body.substring(indxUsername+14,indxEndUsername);
         
         return user_id +";"+username;
+    }
+    
+    private long getFileTime(File f){
+        try{
+            Metadata metadata = ImageMetadataReader.readMetadata(f);
+            ExifSubIFDDirectory directory  = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+            Date date  = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+            return date.getTime();
+        }
+        catch(Exception ex)
+        {}
+        return 0;
+    }
+    
+    private long getSequence(ImageProperties imp, String user_id, String user_name)
+    {
+        
+        return -1;
     }
     
     private ImageProperties getImageProperties(File f){
@@ -132,8 +151,32 @@ public class JPMain extends javax.swing.JPanel {
         Arrays.sort(file_list, new Comparator<File>(){
         public int compare(File f1, File f2)
         {
-            return Long.valueOf(f1.lastModified()).compareTo(f2.lastModified());
+            return Long.valueOf(getFileTime(f1)).compareTo(getFileTime(f2));
         }});
+        
+        File f_sequence = new File(dir+"/sequence_file.txt");
+        Boolean need_seq = true;
+        int sequence_id;
+        if(f_sequence.exists())
+        {
+            try
+            {
+                List<String> id = Files.readAllLines(Paths.get(f_sequence.getPath()));
+                if(id.size()>0)
+                {
+                    sequence_id = Integer.parseInt(id.get(0));
+                    need_seq=false;
+                }
+            }
+            catch(Exception ex)
+            {
+                need_seq=true;
+            }            
+        }
+        else
+        {
+            need_seq=true;
+        }
         
         //Read file info
         for(File f : file_list)
@@ -141,6 +184,12 @@ public class JPMain extends javax.swing.JPanel {
             try{
                 
                 ImageProperties imp = getImageProperties(f);
+                //TODO: Check that file has GPS coordinates
+                //TODO: Remove invalid photos
+                if(need_seq)
+                {
+                    sequence_id=getSequence(imp,usr_id,usr_name);
+                }
             }
             catch(Exception ex)
             {
