@@ -8,15 +8,31 @@ import javax.swing.*;
 import java.io.File;
 import java.lang.*;
 import ca.osmcanada.osvuploadr.API.OSMApi;
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
+import com.drew.metadata.exif.ExifSubIFDDescriptor;
+import com.drew.metadata.exif.GpsDescriptor;
+import com.drew.metadata.exif.GpsDirectory;
 import com.github.scribejava.core.builder.ServiceBuilder;
-import com.github.scribejava.apis.TwitterApi;
 import com.github.scribejava.core.model.OAuth1AccessToken;
 import com.github.scribejava.core.model.OAuth1RequestToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth10aService;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import struct.ImageProperties;
 
 /**
  *
@@ -56,6 +72,84 @@ public class JPMain extends javax.swing.JPanel {
         
         return user_id +";"+username;
     }
+    
+    private ImageProperties getImageProperties(File f){
+        try{
+            Metadata metadata = ImageMetadataReader.readMetadata(f);
+            GpsDirectory directory = metadata.getFirstDirectoryOfType(GpsDirectory.class);
+        
+            ImageProperties imp = new ImageProperties();
+            imp.setLatitude(directory.getGeoLocation().getLatitude());
+            imp.setLongitude(directory.getGeoLocation().getLongitude());
+            imp.setCompass(-1.0);
+            imp.setFilePath(f.getPath());
+        
+            if(directory.hasTagName(directory.TAG_IMG_DIRECTION))
+            {
+                try
+                {
+                    imp.setCompass(directory.getDouble(directory.TAG_IMG_DIRECTION));
+                }
+                catch(Exception ex)
+                {}
+            }
+            if(directory.hasTagName(directory.TAG_TRACK) && imp.getCompass()==-1.0)
+            {
+                try
+                {
+                    imp.setCompass(directory.getDouble(directory.TAG_TRACK));
+                }
+                catch(Exception ex)
+                {}
+            }
+
+            return imp;
+        }catch(Exception ex)
+        {
+            JOptionPane.showMessageDialog(null,ex.getMessage(), "Error", JOptionPane.ERROR);
+        }
+        return null;
+    }
+    
+    private void Process(String dir, String usr_id, String usr_name)
+    {
+        File dir_photos = new File(dir);
+        //filter only .jpgs
+        FilenameFilter fileNameFilter = new FilenameFilter() {                
+            public boolean accept(File dir, String name) {
+               if (name.lastIndexOf('.') > 0) {
+                    int lastIndex = name.lastIndexOf('.');
+                    String str = name.substring(lastIndex);
+                    if (str.equals(".jpg")) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+        File[] file_list = dir_photos.listFiles(fileNameFilter);
+        //sort by modified time
+        Arrays.sort(file_list, new Comparator<File>(){
+        public int compare(File f1, File f2)
+        {
+            return Long.valueOf(f1.lastModified()).compareTo(f2.lastModified());
+        }});
+        
+        //Read file info
+        for(File f : file_list)
+        {
+            try{
+                
+                ImageProperties imp = getImageProperties(f);
+            }
+            catch(Exception ex)
+            {
+                JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR);
+            }
+             
+        }
+    }
+                
     
 
     /**
@@ -99,6 +193,11 @@ public class JPMain extends javax.swing.JPanel {
         jButton3.setText("Upload");
         jButton3.setMaximumSize(new java.awt.Dimension(123, 23));
         jButton3.setMinimumSize(new java.awt.Dimension(123, 23));
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
 
         jButton4.setText("Exit");
         jButton4.setMaximumSize(new java.awt.Dimension(123, 23));
@@ -173,7 +272,7 @@ public class JPMain extends javax.swing.JPanel {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         JFileChooser fc = new JFileChooser();
-        fc.setCurrentDirectory(new java.io.File(".")); // start at application current directory
+        //fc.setCurrentDirectory(new java.io.File(".")); // start at application current directory
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
@@ -192,6 +291,39 @@ public class JPMain extends javax.swing.JPanel {
             }
         }
     }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        File id = new File("./id_file.txt");
+        String usr="";
+        if(!id.exists())
+        {
+            try{
+                String user_id=GetOSMUser();
+                Path targetPath = Paths.get("./id_file.txt");
+                byte[] bytes = user_id.getBytes(StandardCharsets.UTF_8);
+                Files.write(targetPath, bytes, StandardOpenOption.CREATE); 
+                usr = user_id;
+            }
+            catch(Exception ex)
+            {
+            }
+        }
+        else
+        {
+            try{
+                List<String> user_id = Files.readAllLines(Paths.get(id.getPath()));
+                if(user_id.size()>0){
+                    usr=user_id.get(0); //read first line
+                }                
+            }
+            catch(Exception ex)
+            {}
+        }
+        
+        //Start processing list
+        Process(listDir.getItem(0),usr.split(";")[0],usr.split(";")[1]);
+                
+    }//GEN-LAST:event_jButton3ActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
