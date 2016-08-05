@@ -125,6 +125,51 @@ public class JPMain extends javax.swing.JPanel {
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    private void SendFinished(long Sequence_id, String user_id)
+    {
+        try
+        {
+            URL url = new URL(URL_SEQUENCE);
+            URLConnection con = url.openConnection();
+            HttpURLConnection http = (HttpURLConnection)con;
+            http.setRequestMethod("POST"); // PUT is another valid option
+            http.setDoOutput(true);
+            
+            Map<String,String> arguments = new HashMap<>();
+            arguments.put("externalUserId", user_id);
+            arguments.put("userType", "osm");
+            arguments.put("sequenceId", Long.toString(Sequence_id));
+            
+            StringJoiner sj = new StringJoiner("&");
+            for(Map.Entry<String,String> entry : arguments.entrySet())
+                sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
+            byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
+            int length = out.length;
+            
+            http.setFixedLengthStreamingMode(length);
+            http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            http.connect();
+            try(OutputStream os = http.getOutputStream()) {
+                os.write(out);
+                os.close();
+            }
+            InputStream is = http.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            byte buf[] = new byte[1024];
+            int letti;
+
+            while ((letti = is.read(buf)) > 0)
+            baos.write(buf, 0, letti);
+
+            String data = new String(baos.toByteArray());
+            http.disconnect();
+            
+        }
+        catch(Exception ex){
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     private long getSequence(ImageProperties imp, String user_id, String user_name)
     {
         try {
@@ -154,6 +199,7 @@ public class JPMain extends javax.swing.JPanel {
             http.connect();
             try(OutputStream os = http.getOutputStream()) {
                 os.write(out);
+                os.close();
             }
             InputStream is = http.getInputStream();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -341,7 +387,7 @@ public class JPMain extends javax.swing.JPanel {
         {
             need_seq=true;
         }
-        
+        //TODO: Load count from file
         int cnt =0;
         //Read file info
         for(File f : file_list)
@@ -358,9 +404,8 @@ public class JPMain extends javax.swing.JPanel {
                     need_seq=false;
                 }
                 imp.setSequenceNumber(cnt);
-                cnt++;
-                Upload_Image(imp,usr_id,usr_name,sequence_id);
-                
+                cnt++; //TODO: Write count to file
+                Upload_Image(imp,usr_id,usr_name,sequence_id);                
             }
             catch(Exception ex)
             {
@@ -368,6 +413,7 @@ public class JPMain extends javax.swing.JPanel {
             }
              
         }
+        SendFinished(sequence_id, usr_id);
     }
                 
     
@@ -541,7 +587,9 @@ public class JPMain extends javax.swing.JPanel {
         }
         
         //Start processing list
-        Process(listDir.getItem(0),usr.split(";")[0],usr.split(";")[1]);
+        for(String item:listDir.getItems()){
+            Process(item,usr.split(";")[0],usr.split(";")[1]);
+        }
                 
     }//GEN-LAST:event_jButton3ActionPerformed
 
