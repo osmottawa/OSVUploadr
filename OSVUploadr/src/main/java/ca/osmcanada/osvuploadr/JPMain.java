@@ -10,9 +10,6 @@ import java.lang.*;
 import ca.osmcanada.osvuploadr.API.OSMApi;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
-import com.drew.metadata.Tag;
-import com.drew.metadata.exif.ExifSubIFDDescriptor;
-import com.drew.metadata.exif.GpsDescriptor;
 import com.drew.metadata.exif.GpsDirectory;
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth1AccessToken;
@@ -33,7 +30,23 @@ import java.util.Comparator;
 import java.util.List;
 import ca.osmcanada.osvuploadr.struct.ImageProperties;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.RoundingMode;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.StringJoiner;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -42,6 +55,9 @@ import java.util.Date;
 public class JPMain extends javax.swing.JPanel {
 
     private final String BASE_URL="http://www.openstreetmap.org/";
+    private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
+    private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
+    private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
     /**
      * Creates new form JPMain
      */   
@@ -86,9 +102,78 @@ public class JPMain extends javax.swing.JPanel {
         return 0;
     }
     
+    private void sendFile(OutputStream out, String name, InputStream in, String fileName) {
+        try {
+            String o = "Content-Disposition: form-data; name=\"" + URLEncoder.encode(name,"UTF-8") + "\"; filename=\"" + URLEncoder.encode(fileName,"UTF-8") + "\"\r\nContent-Type: image/jpeg\r\n\r\n";
+            out.write(o.getBytes(StandardCharsets.UTF_8));
+            byte[] buffer = new byte[2048];
+            for (int n = 0; n >= 0; n = in.read(buffer))
+                out.write(buffer, 0, n);
+            out.write("\r\n".getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ex) {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void sendField(OutputStream out, String name, String field) {
+        try {
+            String o = "Content-Disposition: form-data; name=\"" + URLEncoder.encode(name,"UTF-8") + "\"\r\n\r\n";
+            out.write(o.getBytes(StandardCharsets.UTF_8));
+            out.write(field.getBytes(StandardCharsets.UTF_8));
+            out.write("\r\n".getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ex) {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
     private long getSequence(ImageProperties imp, String user_id, String user_name)
     {
-        
+        try {
+            URL url = new URL(URL_SEQUENCE);
+            URLConnection con = url.openConnection();
+            HttpURLConnection http = (HttpURLConnection)con;
+            http.setRequestMethod("POST"); // PUT is another valid option
+            http.setDoOutput(true);
+
+            DecimalFormat df = new DecimalFormat("#.######");
+            df.setRoundingMode(RoundingMode.CEILING);
+            
+            Map<String,String> arguments = new HashMap<>();
+            arguments.put("externalUserId", user_id);
+            arguments.put("userType", "osm");
+            arguments.put("userName", user_name);
+            arguments.put("clientToken", "2ed202ac08ea9cf8d5f290567037dcc42ed202ac08ea9cf8d5f290567037dcc4");
+            arguments.put("currentCoordinate", df.format(imp.getLatitude())+ "," + df.format(imp.getLongitude()));
+            StringJoiner sj = new StringJoiner("&");
+            for(Map.Entry<String,String> entry : arguments.entrySet())
+                sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
+            byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
+            int length = out.length;
+            
+            http.setFixedLengthStreamingMode(length);
+            http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            http.connect();
+            try(OutputStream os = http.getOutputStream()) {
+                os.write(out);
+            }
+            InputStream is = http.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            byte buf[] = new byte[1024];
+            int letti;
+
+            while ((letti = is.read(buf)) > 0)
+            baos.write(buf, 0, letti);
+
+            String data = new String(baos.toByteArray());
+            int start = data.indexOf("\"osv\":{\"sequence\":{\"id\":\"");
+            int end = data.indexOf("\"",start+25);
+            String sequence_id= data.substring(start+25,end);
+            http.disconnect();
+            return Long.parseLong(sequence_id);
+            
+        } catch (Exception ex) {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return -1;
     }
     
@@ -130,6 +215,85 @@ public class JPMain extends javax.swing.JPanel {
         return null;
     }
     
+    private void Upload_Image(ImageProperties imp, String user_id, String user_name, long Sequence_id)
+    {
+        try{
+            URL url = new URL(URL_PHOTO);
+            URLConnection con = url.openConnection();
+            HttpURLConnection http = (HttpURLConnection)con;
+            http.setRequestMethod("POST"); // PUT is another valid option
+            http.setDoOutput(true);
+            
+            String boundary = UUID.randomUUID().toString();
+            byte[] boundaryBytes = boundaryBytes =  ("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8);
+            byte[] finishBoundaryBytes = ("--" + boundary + "--").getBytes(StandardCharsets.UTF_8);
+            http.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            http.setRequestProperty("Accept", "*/*");
+
+            // Enable streaming mode with default settings
+            http.setChunkedStreamingMode(0); 
+            
+            // Send our fields:
+            try(OutputStream out = http.getOutputStream()) {
+                // Send our header
+                out.write(boundaryBytes);
+
+                // Send our sequence id
+                sendField(out, "sequenceId", Long.toString(Sequence_id));
+    
+                // Send a seperator
+                out.write(boundaryBytes);
+                if(imp.getCompass()>=0){
+                    // Send our compass
+                    sendField(out, "headers", Double.toString(imp.getCompass()));
+
+                    // Send another seperator
+                    out.write(boundaryBytes);
+                }
+                
+                // Send our sequence index
+                sendField(out, "sequenceIndex", Integer.toString(imp.getSequenceNumber()));
+    
+                // Send a seperator
+                out.write(boundaryBytes);
+                
+                // Send our coordinates
+                sendField(out, "coordinate", imp.getCoordinates());
+    
+                // Send a seperator
+                out.write(boundaryBytes);
+                
+
+                String[] tokens = imp.getFilePath().split("[\\\\|/]");
+                String filename = tokens[tokens.length - 1];
+                // Send our file
+                try(InputStream file = new FileInputStream(imp.getFilePath())) {
+                  sendFile(out, "photo", file, filename);
+                }
+
+                // Finish the request
+                out.write(finishBoundaryBytes);
+                out.close();
+            }
+            InputStream is = http.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            byte buf[] = new byte[1024];
+            int letti;
+
+            while ((letti = is.read(buf)) > 0)
+            baos.write(buf, 0, letti);
+
+            String data = new String(baos.toByteArray());
+            //TODO:Process returned JSON
+            http.disconnect();
+        }
+        catch(Exception ex)
+        {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     private void Process(String dir, String usr_id, String usr_name)
     {
         File dir_photos = new File(dir);
@@ -156,7 +320,7 @@ public class JPMain extends javax.swing.JPanel {
         
         File f_sequence = new File(dir+"/sequence_file.txt");
         Boolean need_seq = true;
-        int sequence_id;
+        long sequence_id=-1;
         if(f_sequence.exists())
         {
             try
@@ -164,7 +328,7 @@ public class JPMain extends javax.swing.JPanel {
                 List<String> id = Files.readAllLines(Paths.get(f_sequence.getPath()));
                 if(id.size()>0)
                 {
-                    sequence_id = Integer.parseInt(id.get(0));
+                    sequence_id = Long.parseLong(id.get(0));
                     need_seq=false;
                 }
             }
@@ -178,18 +342,25 @@ public class JPMain extends javax.swing.JPanel {
             need_seq=true;
         }
         
+        int cnt =0;
         //Read file info
         for(File f : file_list)
         {
             try{
-                
                 ImageProperties imp = getImageProperties(f);
                 //TODO: Check that file has GPS coordinates
                 //TODO: Remove invalid photos
                 if(need_seq)
                 {
                     sequence_id=getSequence(imp,usr_id,usr_name);
+                    byte[] bytes = Long.toString(sequence_id).getBytes(StandardCharsets.UTF_8);
+                    Files.write(Paths.get(f_sequence.getPath()), bytes, StandardOpenOption.CREATE); 
+                    need_seq=false;
                 }
+                imp.setSequenceNumber(cnt);
+                cnt++;
+                Upload_Image(imp,usr_id,usr_name,sequence_id);
+                
             }
             catch(Exception ex)
             {

@@ -5,6 +5,9 @@
  */
 package ca.osmcanada.osvuploadr.struct;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+
 /**
  *
  * @author Jamie Nadeau
@@ -92,6 +95,17 @@ public class ImageProperties {
      */
     public int getSequenceNumber(){
         return _seq_num;
+    }
+    
+    /**
+     * Gets a string version of the GPS coordinates
+     * @return a string combining latitude and longitude seperated by a comma
+     */
+    public String getCoordinates(){
+        DecimalFormat df = new DecimalFormat("#.######");
+        df.setRoundingMode(RoundingMode.CEILING);
+        String coords = df.format(_lat)+","+df.format(_long);
+        return coords;
     }
     // </editor-fold>
     
