@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.io.File;
 import java.lang.*;
 import ca.osmcanada.osvuploadr.API.OSMApi;
+import ca.osmcanada.osvuploadr.UploadManager;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.GpsDirectory;
@@ -58,6 +59,8 @@ public class JPMain extends javax.swing.JPanel {
     private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
     private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
     private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
+    
+    UploadManager um;
     /**
      * Creates new form JPMain
      */   
@@ -590,6 +593,8 @@ public class JPMain extends javax.swing.JPanel {
         for(String item:listDir.getItems()){
             Process(item,usr.split(";")[0],usr.split(";")[1]);
         }
+        /*um = new UploadManager(listDir.getItems());
+        um.start();*/
                 
     }//GEN-LAST:event_jButton3ActionPerformed
 
