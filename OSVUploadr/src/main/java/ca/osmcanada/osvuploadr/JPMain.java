@@ -59,6 +59,7 @@ public class JPMain extends javax.swing.JPanel {
     private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
     private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
     private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
+    private String last_dir ="";
     
     UploadManager um;
     /**
@@ -132,7 +133,7 @@ public class JPMain extends javax.swing.JPanel {
     {
         try
         {
-            URL url = new URL(URL_SEQUENCE);
+            URL url = new URL(URL_FINISH);
             URLConnection con = url.openConnection();
             HttpURLConnection http = (HttpURLConnection)con;
             http.setRequestMethod("POST"); // PUT is another valid option
@@ -182,7 +183,7 @@ public class JPMain extends javax.swing.JPanel {
             http.setRequestMethod("POST"); // PUT is another valid option
             http.setDoOutput(true);
 
-            DecimalFormat df = new DecimalFormat("#.######");
+            DecimalFormat df = new DecimalFormat("#.##############");
             df.setRoundingMode(RoundingMode.CEILING);
             
             Map<String,String> arguments = new HashMap<>();
@@ -541,12 +542,15 @@ public class JPMain extends javax.swing.JPanel {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         JFileChooser fc = new JFileChooser();
-        //fc.setCurrentDirectory(new java.io.File(".")); // start at application current directory
+        if(!last_dir.isEmpty()){
+            fc.setCurrentDirectory(new java.io.File(last_dir)); // start at application current directory
+        }
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
             File folder = fc.getSelectedFile();
             listDir.add(folder.getPath());
+            last_dir=folder.getPath();
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -593,8 +597,8 @@ public class JPMain extends javax.swing.JPanel {
         for(String item:listDir.getItems()){
             Process(item,usr.split(";")[0],usr.split(";")[1]);
         }
-        /*um = new UploadManager(listDir.getItems());
-        um.start();*/
+        //um = new UploadManager(listDir.getItems());
+        //um.start();
                 
     }//GEN-LAST:event_jButton3ActionPerformed
 

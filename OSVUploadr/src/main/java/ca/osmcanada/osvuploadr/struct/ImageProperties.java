@@ -102,7 +102,7 @@ public class ImageProperties {
      * @return a string combining latitude and longitude seperated by a comma
      */
     public String getCoordinates(){
-        DecimalFormat df = new DecimalFormat("#.######");
+        DecimalFormat df = new DecimalFormat("#.##############");
         df.setRoundingMode(RoundingMode.CEILING);
         String coords = df.format(_lat)+","+df.format(_long);
         return coords;
