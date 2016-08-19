@@ -20,6 +20,7 @@ public class JFMain extends javax.swing.JFrame {
         //initComponents();
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         this.setSize(640,320);
+        this.setTitle("OSVUploadr");
     }
 
     /**

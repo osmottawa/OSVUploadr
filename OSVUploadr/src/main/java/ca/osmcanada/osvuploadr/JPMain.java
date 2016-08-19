@@ -39,6 +39,7 @@ import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.util.Date;
@@ -608,7 +609,16 @@ public class JPMain extends javax.swing.JPanel {
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        File id = new File("./id_file.txt");
+        String path = ca.osmcanada.osvuploadr.JFMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String decodedPath="";
+        try{
+            decodedPath=new File(URLDecoder.decode(path, "UTF-8")).getParentFile().getPath();
+        }
+        catch(Exception ex)
+        {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        File id = new File(decodedPath+"/id_file.txt");
         String usr="";
         if(!id.exists())
         {

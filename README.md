@@ -16,4 +16,3 @@ To start the application you need the java runtime environment(JRE) version 1.8+
 - If images aren't geotagged the application will probably crash
 - Remove Duplicates does nothing (for now)
 - Application is only for action cameras. I will eventually incorporate images/videos taken from the APP.
-- No resume from last file. Currently reuploads from image 1. (Currently working on this)
