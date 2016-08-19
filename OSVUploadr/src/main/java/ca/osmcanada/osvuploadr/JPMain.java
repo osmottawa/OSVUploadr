@@ -393,6 +393,45 @@ public class JPMain extends javax.swing.JPanel {
         }
         //TODO: Load count from file
         int cnt =0;
+        File f_cnt = new File(dir+"/count_file.txt");
+        if(f_cnt.exists())
+        {
+            try
+            {
+                List<String> id = Files.readAllLines(Paths.get(f_cnt.getPath()));
+                if(id.size()>0)
+                {
+                    cnt= Integer.parseInt(id.get(0));
+                }
+            }
+            catch(Exception ex)
+            {
+                cnt=0;
+            }     
+        }
+        else
+        {
+            try{
+                f_cnt.createNewFile();
+            }
+            catch(Exception ex)
+            {
+                Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        if(cnt>0){
+            if(file_list.length>cnt){
+                File[] tmp = new File[file_list.length-cnt];
+                int local_cnt=0;
+                for(int i=cnt;i<file_list.length;i++)
+                {
+                    tmp[local_cnt]=file_list[i];
+                    local_cnt++;
+                }
+                file_list=tmp;
+            }
+        }
+
         //Read file info
         for(File f : file_list)
         {
@@ -408,8 +447,11 @@ public class JPMain extends javax.swing.JPanel {
                     need_seq=false;
                 }
                 imp.setSequenceNumber(cnt);
-                cnt++; //TODO: Write count to file
-                Upload_Image(imp,usr_id,usr_name,sequence_id);                
+                cnt++; //TODO: Write count to file                
+                Upload_Image(imp,usr_id,usr_name,sequence_id);
+                String out =String.valueOf(cnt);
+                Files.write(Paths.get(f_cnt.getPath()),out.getBytes("UTF-8"), StandardOpenOption.TRUNCATE_EXISTING);
+
             }
             catch(Exception ex)
             {
