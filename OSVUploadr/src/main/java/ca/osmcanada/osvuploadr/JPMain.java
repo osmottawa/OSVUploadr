@@ -591,9 +591,26 @@ public class JPMain extends javax.swing.JPanel {
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
-            File folder = fc.getSelectedFile();
-            listDir.add(folder.getPath());
-            last_dir=folder.getPath();
+            int response = JOptionPane.showConfirmDialog(null, "Do you wish to add all immediate subfolders of this folder?", "Add subfolders?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if(response == JOptionPane.NO_OPTION){
+                File folder = fc.getSelectedFile();
+                listDir.add(folder.getPath());
+                last_dir=folder.getPath();
+            }
+            else if (response == JOptionPane.YES_OPTION)
+            {
+                //Get a list of subdirectories
+                String[] subDirs = fc.getSelectedFile().list(new FilenameFilter(){
+                    @Override
+                    public boolean accept(File current, String name){
+                        return new File(current,name).isDirectory();
+                    }
+                });
+                
+                for(String subDir: subDirs){
+                    listDir.add(new File(fc.getSelectedFile() + "/" +subDir).getPath());
+                }                
+            }
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 
