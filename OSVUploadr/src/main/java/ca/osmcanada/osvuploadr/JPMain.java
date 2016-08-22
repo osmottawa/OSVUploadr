@@ -49,6 +49,7 @@ import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import ca.osmcanada.osvuploadr.Utils.*;
 
 /**
  *
@@ -93,20 +94,8 @@ public class JPMain extends javax.swing.JPanel {
         String username = body.substring(indxUsername+14,indxEndUsername);
         
         return user_id +";"+username;
-    }
-    
-    private long getFileTime(File f){
-        try{
-            Metadata metadata = ImageMetadataReader.readMetadata(f);
-            ExifSubIFDDirectory directory  = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-            Date date  = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
-            return date.getTime();
-        }
-        catch(Exception ex)
-        {}
-        return 0;
-    }
-    
+    } 
+
     private void sendFile(OutputStream out, String name, InputStream in, String fileName) {
         try {
             String o = "Content-Disposition: form-data; name=\"" + URLEncoder.encode(name,"UTF-8") + "\"; filename=\"" + URLEncoder.encode(fileName,"UTF-8") + "\"\r\nContent-Type: image/jpeg\r\n\r\n";
@@ -228,43 +217,7 @@ public class JPMain extends javax.swing.JPanel {
         return -1;
     }
     
-    private ImageProperties getImageProperties(File f){
-        try{
-            Metadata metadata = ImageMetadataReader.readMetadata(f);
-            GpsDirectory directory = metadata.getFirstDirectoryOfType(GpsDirectory.class);
-        
-            ImageProperties imp = new ImageProperties();
-            imp.setLatitude(directory.getGeoLocation().getLatitude());
-            imp.setLongitude(directory.getGeoLocation().getLongitude());
-            imp.setCompass(-1.0);
-            imp.setFilePath(f.getPath());
-        
-            if(directory.hasTagName(directory.TAG_IMG_DIRECTION))
-            {
-                try
-                {
-                    imp.setCompass(directory.getDouble(directory.TAG_IMG_DIRECTION));
-                }
-                catch(Exception ex)
-                {}
-            }
-            if(directory.hasTagName(directory.TAG_TRACK) && imp.getCompass()==-1.0)
-            {
-                try
-                {
-                    imp.setCompass(directory.getDouble(directory.TAG_TRACK));
-                }
-                catch(Exception ex)
-                {}
-            }
-
-            return imp;
-        }catch(Exception ex)
-        {
-            JOptionPane.showMessageDialog(null,ex.getMessage(), "Error", JOptionPane.ERROR);
-        }
-        return null;
-    }
+    
     
     private void Upload_Image(ImageProperties imp, String user_id, String user_name, long Sequence_id)
     {
@@ -349,7 +302,7 @@ public class JPMain extends javax.swing.JPanel {
     {
         File dir_photos = new File(dir);
         //filter only .jpgs
-        FilenameFilter fileNameFilter = new FilenameFilter() {                
+        FilenameFilter fileNameFilter = new FilenameFilter() {
             public boolean accept(File dir, String name) {
                if (name.lastIndexOf('.') > 0) {
                     int lastIndex = name.lastIndexOf('.');
@@ -366,7 +319,7 @@ public class JPMain extends javax.swing.JPanel {
         Arrays.sort(file_list, new Comparator<File>(){
         public int compare(File f1, File f2)
         {
-            return Long.valueOf(getFileTime(f1)).compareTo(getFileTime(f2));
+            return Long.valueOf(Helper.getFileTime(f1)).compareTo(Helper.getFileTime(f2));
         }});
         
         File f_sequence = new File(dir+"/sequence_file.txt");
@@ -437,7 +390,7 @@ public class JPMain extends javax.swing.JPanel {
         for(File f : file_list)
         {
             try{
-                ImageProperties imp = getImageProperties(f);
+                ImageProperties imp = Helper.getImageProperties(f);
                 //TODO: Check that file has GPS coordinates
                 //TODO: Remove invalid photos
                 if(need_seq)
@@ -502,6 +455,11 @@ public class JPMain extends javax.swing.JPanel {
         jLabel1.setText("Directories");
 
         jButton2.setText("Remove Duplicates");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jButton3.setText("Upload");
         jButton3.setMaximumSize(new java.awt.Dimension(123, 23));
@@ -670,6 +628,11 @@ public class JPMain extends javax.swing.JPanel {
         //um.start();
                 
     }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        FolderCleaner fc = new FolderCleaner("C:\\pyscripts\\openstreetview\\photos2\\2");
+        fc.RemoveDuplicates();
+    }//GEN-LAST:event_jButton2ActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
