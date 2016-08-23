@@ -12,9 +12,12 @@ To start the application you need the java runtime environment(JRE) version 1.8+
 3. You will be prompted if you want to add all subfolders of the selected directory. If you click "**Yes**" then all immediate subfolders will be added instead of selecting them one by one. If you click "**No**" then just that folder will be added.![prompt](https://cloud.githubusercontent.com/assets/498547/17811312/10916790-65f0-11e6-995f-78b1650bcc96.PNG)
 4. After you have added folders to the queue. Press the "**Upload**" button to start the upload process. ![listofdirs](https://cloud.githubusercontent.com/assets/498547/17811345/3a7fb8ae-65f0-11e6-912c-e5224b0bb523.PNG)
 
+## Remove duplicates ##
+Once you have added the folders to be processed, press the "**Remove Duplicates**" button.
+This is a **non destructive** option, it will simply move the duplicates into a folder called duplicates. If you ever need them again they will be available. This will process every folder in the directory list.
+
 
 ## Known issues ##
 - Upload process is not threaded, so the upload button will look frozen until it finishes the upload.
 - If images aren't geotagged the application will probably crash
-- Remove Duplicates does nothing (for now)
 - Application is only for action cameras. I will eventually incorporate images/videos taken from the APP.

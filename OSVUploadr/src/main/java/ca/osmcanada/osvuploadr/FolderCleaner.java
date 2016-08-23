@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import java.time.Duration;
 import ca.osmcanada.osvuploadr.Utils.*;
 import ca.osmcanada.osvuploadr.struct.ImageProperties;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -27,17 +28,21 @@ import java.util.HashMap;
 public class FolderCleaner {
     String _folder;
     int max_speed=300; //Improbable speed to reach (km/h)
-    int min_duplicates = 2; // Minimum of photos in "same location" to be considered duplicates
+    int min_duplicates = 3; // Minimum of photos in "same location" to be considered duplicates
     int dist_threshold = 4; // Minimum distance a photo should move to not be considered a duplicate (in meters)
     int radius_threshold = 20; // Minimum turn radius a photo should move to not be considered a duplicate (degrees)
     String duplicate_folder="duplicates";
     
     private double calc_distance(double lon1, double lat1, double lon2, double lat2){
         //haversine formula
+        lon1=Math.toRadians(lon1);
+        lon2=Math.toRadians(lon2);
+        lat1=Math.toRadians(lat1);
+        lat2=Math.toRadians(lat2);
         double dlon = lon2-lon1;
         double dlat = lat2-lat1;
         double a = Math.pow(Math.sin(dlat/2),2) + Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin(dlon/2),2);
-        double c = 2*Math.asin(Math.sqrt(a));
+        double c = 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
         double r = 6371000; // Average Earth Radius in meters
         return r*c;
     }
@@ -85,23 +90,23 @@ public class FolderCleaner {
                 is_first=false;
                 prev_lat=imp.getLatitude();
                 prev_long=imp.getLongitude();
-                last_Date=new Date(Helper.getFileTime(f));
+                last_Date=new Date(file_timecache.get(f));
                 prev_compass = imp.getCompass();
                 continue;
             }
             
             dist_diff = calc_distance(prev_long,prev_lat, imp.getLongitude(),imp.getLatitude());
             compass_diff = Math.abs(prev_compass - imp.getCompass());
-            Logger.getLogger(JPMain.class.getName()).log(Level.INFO, null, "Moved:" + String.valueOf(dist_diff));
-            Logger.getLogger(JPMain.class.getName()).log(Level.INFO, null, "Rotated:" + String.valueOf(compass_diff));
-            ts_diff=Duration.between(last_Date.toInstant(), Instant.ofEpochMilli(Helper.getFileTime(f))).getSeconds();
+            Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Moved:" + String.valueOf(dist_diff));
+            Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Rotated:" + String.valueOf(compass_diff));
+            ts_diff=Duration.between(last_Date.toInstant(), Instant.ofEpochMilli(file_timecache.get(f))).getSeconds();
             if(ts_diff == 0)
             {
                 //Is a duplicate or a copy
                 continue;
             }
             km_h = (dist_diff/ts_diff) * 3.6; // Calculcate m/s and convert to km/h
-            Logger.getLogger(JPMain.class.getName()).log(Level.INFO, null, "Moved:" + String.valueOf(km_h) + " km/h");
+            Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Moved:" + String.valueOf(km_h) + " km/h");
             if(km_h > max_speed){
                 //TODO: move files to a new folder and split the sequence
             }
@@ -111,15 +116,23 @@ public class FolderCleaner {
             }
             else{
                 duplicate_cnt=0;
+                prev_lat=imp.getLatitude();
+                prev_long=imp.getLongitude();
+                last_Date=new Date(file_timecache.get(f));
+                prev_compass= imp.getCompass();
             }
-            prev_lat=imp.getLatitude();
-            prev_long=imp.getLongitude();
-            last_Date=new Date(Helper.getFileTime(f));
-            prev_compass= imp.getCompass();
+            
             if(duplicate_cnt >= min_duplicates)
             {
                 //File is a duplicate, move to duplicate folder
-                System.out.println("Have to move:" + imp.getFilePath());
+                Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Have to move:" + imp.getFilePath());
+                File newLoc = new File(_folder +"/"+duplicate_folder+"/"+f.getName());
+                try{
+                Files.move(f.toPath(), newLoc.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                }
+                catch(Exception ex){
+                    Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, ex.toString(),ex);
+                }
             }         
         }
         
@@ -134,7 +147,7 @@ public class FolderCleaner {
             }
             catch(Exception ex)
             {
-                Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, ex.toString());
             }
         }
         do_science();

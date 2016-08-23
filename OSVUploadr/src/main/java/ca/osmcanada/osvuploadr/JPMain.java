@@ -630,8 +630,10 @@ public class JPMain extends javax.swing.JPanel {
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        FolderCleaner fc = new FolderCleaner("C:\\pyscripts\\openstreetview\\photos2\\2");
-        fc.RemoveDuplicates();
+        for(String item:listDir.getItems()){
+            FolderCleaner fc = new FolderCleaner(item);
+            fc.RemoveDuplicates();  
+        }        
     }//GEN-LAST:event_jButton2ActionPerformed
 
 
