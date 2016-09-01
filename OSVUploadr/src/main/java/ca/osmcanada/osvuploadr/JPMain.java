@@ -138,6 +138,7 @@ public class JPMain extends javax.swing.JPanel {
             arguments.put("externalUserId", user_id);
             arguments.put("userType", "osm");
             arguments.put("sequenceId", Long.toString(Sequence_id));
+            System.out.println("externalUserId:" + user_id + "|sequenceId:"+Long.toString(Sequence_id));
             
             StringJoiner sj = new StringJoiner("&");
             for(Map.Entry<String,String> entry : arguments.entrySet())
@@ -241,7 +242,7 @@ public class JPMain extends javax.swing.JPanel {
 
             // Enable streaming mode with default settings
             http.setChunkedStreamingMode(0); 
-            
+            System.out.println("Uploading:"+ imp.getFilePath());
             // Send our fields:
             try(OutputStream out = http.getOutputStream()) {
                 // Send our header
@@ -295,6 +296,7 @@ public class JPMain extends javax.swing.JPanel {
 
             String data = new String(baos.toByteArray());
             //TODO:Process returned JSON
+            System.out.println(data);
             http.disconnect();
         }
         catch(Exception ex)
