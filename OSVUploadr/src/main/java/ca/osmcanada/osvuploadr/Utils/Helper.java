@@ -7,11 +7,13 @@ package ca.osmcanada.osvuploadr.Utils;
 
 import ca.osmcanada.osvuploadr.JPMain;
 import ca.osmcanada.osvuploadr.struct.ImageProperties;
+import ca.osmcanada.osvuploadr.struct.PageContent;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
 import java.awt.Desktop;
+import java.io.BufferedReader;
 import java.io.File;
 import java.net.URI;
 import java.util.Date;
@@ -20,12 +22,20 @@ import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  *
  * @author Jamie Nadeau
  */
 public final class Helper {
+    private final static String USER_AGENT="Mozilla/5.0";
     public static enum EnumOS {
         linux, macos, solaris, unknown, windows;
 
@@ -99,7 +109,7 @@ public final class Helper {
     
     public static Boolean OpenBrowser(URI uri){
         try{
-            boolean supportsBrowse = false;
+            boolean supportsBrowse = true;
             if(!Desktop.isDesktopSupported()){
                 supportsBrowse = false;
                 if(!Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)){
@@ -123,7 +133,7 @@ public final class Helper {
                 }
 
                 if (os.isWindows()) {
-                    if (runCommand("explorer", "%s", uri.toString())) return true;
+                    if (runCommand("explorer.exe", "%s", uri.toString())) return true;
                 }
             }
         }
@@ -212,5 +222,42 @@ public final class Helper {
     }
     private static void logOut(String msg) {
         System.out.println(msg);
-    }    
+    }
+    
+    public static PageContent GetPageContent(String url, HttpClient client) throws Exception{
+        PageContent pc = new PageContent();
+      
+        HttpGet request = new HttpGet(url);
+        request.setHeader("User-Agent", USER_AGENT);
+	request.setHeader("Accept",
+		"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	request.setHeader("Accept-Language", "en-US,en;q=0.5");
+     
+        HttpResponse response = client.execute(request);
+	int responseCode = response.getStatusLine().getStatusCode();
+        System.out.println("\nSending 'GET' request to URL : " + url);
+	System.out.println("Response Code : " + responseCode);
+
+	BufferedReader rd = new BufferedReader( new InputStreamReader(response.getEntity().getContent()));
+
+	StringBuffer result = new StringBuffer();
+	String line = "";
+	while ((line = rd.readLine()) != null) {
+		result.append(line);
+	}
+        //Setting cookies
+        pc.SetCookies(response.getFirstHeader("Set-Cookie") == null ? "" :response.getFirstHeader("Set-Cookie").toString());
+        pc.SetPage(result.toString());
+
+        return pc;
+    }
+    
+    public static List<NameValuePair> getFormParams(String html,List<String> FieldList)
+    {
+        List<NameValuePair> fields = new ArrayList<NameValuePair>();
+        for(String field:FieldList){
+            //TODO: Get fields from HTML
+        }
+        return null;
+    }
 }
