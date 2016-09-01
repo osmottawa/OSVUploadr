@@ -50,6 +50,12 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import ca.osmcanada.osvuploadr.Utils.*;
+import ca.osmcanada.osvuploadr.struct.PageContent;
+import org.apache.http.client.HttpClient;
+import org.apache.http.HttpException;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  *
@@ -62,6 +68,8 @@ public class JPMain extends javax.swing.JPanel {
     private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
     private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
     private final String URL_ACCESS = "http://openstreetview.com/auth/openstreetmap/client_auth";
+    private final String API_KEY = "rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw";
+    private final String API_SECRET = "rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S";
     private String last_dir ="";
     
     UploadManager um;
@@ -76,10 +84,37 @@ public class JPMain extends javax.swing.JPanel {
         initComponents();
     }
     
+    public String GetOSMUser(String usr, String psw)throws IOException{
+        final OAuth10aService service = new ServiceBuilder()
+                           .apiKey(API_KEY)
+                           .apiSecret(API_SECRET)
+                           .build(OSMApi.instance());
+        final OAuth1RequestToken requestToken = service.getRequestToken();
+        String url = service.getAuthorizationUrl(requestToken);
+        
+        //Automated grant and login***************************************
+        //Get logon form
+        HttpClient client = HttpClientBuilder.create().build();
+        //post.setHeader("User-Agent", USER_AGENT);
+        try{
+            PageContent pc = Helper.GetPageContent(url,client);
+            System.out.println(pc.GetPage());
+        }
+        catch(Exception ex)
+        {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }      
+        
+        
+        
+        //End Automated grant and login **********************************
+        return "";
+    }
+    
     public String GetOSMUser() throws IOException{
         final OAuth10aService service = new ServiceBuilder()
-                           .apiKey("rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw")
-                           .apiSecret("rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S")
+                           .apiKey(API_KEY)
+                           .apiSecret(API_SECRET)
                            .build(OSMApi.instance());
         
         final OAuth1RequestToken requestToken = service.getRequestToken();
