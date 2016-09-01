@@ -68,6 +68,10 @@ public class JPMain extends javax.swing.JPanel {
      * Creates new form JPMain
      */   
     public JPMain() {
+        try{
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        }
+        catch(Exception ex){}
         initComponents();
     }
     
@@ -79,7 +83,8 @@ public class JPMain extends javax.swing.JPanel {
         
         final OAuth1RequestToken requestToken = service.getRequestToken();
         String url = service.getAuthorizationUrl(requestToken);
-        java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
+        Helper.OpenBrowser(java.net.URI.create(url));
+        //java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
         String pin_code = JOptionPane.showInputDialog(null, "Authorization window has opened, please paste authorization code below once authorized.\nWith out the \".\" at the end", "Authorization Required", JOptionPane.INFORMATION_MESSAGE);
         final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, pin_code);
         final OAuthRequest request = new OAuthRequest(Verb.GET, BASE_URL + "api/0.6/user/details", service);
