@@ -585,20 +585,21 @@ public class JPMain extends javax.swing.JPanel {
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         String path = ca.osmcanada.osvuploadr.JFMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        String decodedPath="";
+        String decodedPath = "";
         try{
-            decodedPath=new File(URLDecoder.decode(path, "UTF-8")).getParentFile().getPath();
+            decodedPath = new File(URLDecoder.decode(path, "UTF-8")).getParentFile().getPath();
         }
         catch(Exception ex)
         {
-            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "decodePath", ex);
         }
-        File id = new File(decodedPath+"/id_file.txt");
+        File id = new File(decodedPath + "/id_file.txt");
         String usr="";
         if(!id.exists())
         {
             try{
-                String user_id=GetOSMUser();
+                System.out.println("GetOSMUser");
+                String user_id = GetOSMUser();
                 Path targetPath = Paths.get("./id_file.txt");
                 byte[] bytes = user_id.getBytes(StandardCharsets.UTF_8);
                 Files.write(targetPath, bytes, StandardOpenOption.CREATE); 
@@ -606,6 +607,7 @@ public class JPMain extends javax.swing.JPanel {
             }
             catch(Exception ex)
             {
+                Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "GetOSMUser", ex);
             }
         }
         else
@@ -617,7 +619,9 @@ public class JPMain extends javax.swing.JPanel {
                 }                
             }
             catch(Exception ex)
-            {}
+            {
+                Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "readAllLines", ex);
+            }
         }
         
         //Start processing list
