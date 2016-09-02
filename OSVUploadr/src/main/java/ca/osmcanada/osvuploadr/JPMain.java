@@ -328,20 +328,25 @@ public class JPMain extends javax.swing.JPanel {
             }
         };
         File[] file_list = dir_photos.listFiles(fileNameFilter);
+        System.out.println("Pictures found:"+ String.valueOf(file_list.length));
+        
+        System.out.println("Sorting files");
         //sort by modified time
         Arrays.sort(file_list, new Comparator<File>(){
         public int compare(File f1, File f2)
         {
             return Long.valueOf(Helper.getFileTime(f1)).compareTo(Helper.getFileTime(f2));
         }});
-        
+        System.out.println("End sorting");
         File f_sequence = new File(dir+"/sequence_file.txt");
         Boolean need_seq = true;
         long sequence_id=-1;
+        System.out.println("Checking " + f_sequence.getPath() +" for sequence_file");
         if(f_sequence.exists())
         {
             try
             {
+                System.out.println("Found file, reading sequence id");
                 List<String> id = Files.readAllLines(Paths.get(f_sequence.getPath()));
                 if(id.size()>0)
                 {
@@ -356,13 +361,16 @@ public class JPMain extends javax.swing.JPanel {
         }
         else
         {
+            System.out.println("Sequence file not found, will need to request new id");
             need_seq=true;
         }
         //TODO: Load count from file
+        System.out.println("Looking for count file");
         int cnt =0;
         File f_cnt = new File(dir+"/count_file.txt");
         if(f_cnt.exists())
         {
+            System.out.println("Found count file:" + f_cnt.toString());
             try
             {
                 List<String> id = Files.readAllLines(Paths.get(f_cnt.getPath()));
@@ -379,6 +387,7 @@ public class JPMain extends javax.swing.JPanel {
         else
         {
             try{
+                System.out.println("Creating new count file:" + f_cnt.getPath());
                 f_cnt.createNewFile();
             }
             catch(Exception ex)
@@ -386,6 +395,7 @@ public class JPMain extends javax.swing.JPanel {
                 Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        System.out.println("Current count at:" + String.valueOf(cnt));
         if(cnt>0){
             if(file_list.length>cnt){
                 File[] tmp = new File[file_list.length-cnt];
@@ -399,23 +409,31 @@ public class JPMain extends javax.swing.JPanel {
             }
         }
 
+        System.out.println("Processing photos...");
         //Read file info
         for(File f : file_list)
         {
             try{
+                System.out.println("Processing:" + f.getPath());
                 ImageProperties imp = Helper.getImageProperties(f);
+                System.out.println("Image Properties:" );
+                System.out.println("Lat:" + String.valueOf(imp.getLatitude()) + " Long:" + String.valueOf(imp.getLongitude()) + "Created:" + String.valueOf(Helper.getFileTime(f)));
                 //TODO: Check that file has GPS coordinates
                 //TODO: Remove invalid photos
                 if(need_seq)
                 {
+                    System.out.println("Requesting sequence ID");
                     sequence_id=getSequence(imp,usr_id,usr_name);
+                    System.out.println("Obtained:" + sequence_id);
                     byte[] bytes = Long.toString(sequence_id).getBytes(StandardCharsets.UTF_8);
                     Files.write(Paths.get(f_sequence.getPath()), bytes, StandardOpenOption.CREATE); 
                     need_seq=false;
                 }
                 imp.setSequenceNumber(cnt);
-                cnt++; //TODO: Write count to file                
+                cnt++; //TODO: Write count to file
+                System.out.println("Uploading image:"+ f.getPath());
                 Upload_Image(imp,usr_id,usr_name,sequence_id);
+                System.out.println("Uploaded");
                 String out =String.valueOf(cnt);
                 Files.write(Paths.get(f_cnt.getPath()),out.getBytes("UTF-8"), StandardOpenOption.TRUNCATE_EXISTING);
 
@@ -426,6 +444,7 @@ public class JPMain extends javax.swing.JPanel {
             }
              
         }
+        System.out.println("Sending finish for sequence:"+ sequence_id);
         SendFinished(sequence_id, usr_id);
     }
                 
@@ -608,6 +627,7 @@ public class JPMain extends javax.swing.JPanel {
         }
         File id = new File(decodedPath + "/id_file.txt");
         String usr="";
+        System.out.println("id_file exists:"+ id.exists());
         if(!id.exists())
         {
             try{
@@ -636,9 +656,11 @@ public class JPMain extends javax.swing.JPanel {
                 Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "readAllLines", ex);
             }
         }
+        System.out.println("User ID obtained from file or OSM:" + usr);
         
         //Start processing list
         for(String item:listDir.getItems()){
+            System.out.println("Processing folder:"+item);
             Process(item,usr.split(";")[0],usr.split(";")[1]);
         }
         //um = new UploadManager(listDir.getItems());
