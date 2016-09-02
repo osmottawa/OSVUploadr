@@ -181,18 +181,20 @@ public class JPMain extends javax.swing.JPanel {
 
             DecimalFormat df = new DecimalFormat("#.##############");
             df.setRoundingMode(RoundingMode.CEILING);
-            
+            System.out.println("Getting Sequence ID..");
             Map<String,String> arguments = new HashMap<>();
             arguments.put("externalUserId", user_id);
             arguments.put("userType", "osm");
             arguments.put("userName", user_name);
             arguments.put("clientToken", "2ed202ac08ea9cf8d5f290567037dcc42ed202ac08ea9cf8d5f290567037dcc4");
             arguments.put("currentCoordinate", df.format(imp.getLatitude())+ "," + df.format(imp.getLongitude()));
+            System.out.println("currentCoordinate:" + df.format(imp.getLatitude()) + "," + df.format(imp.getLongitude()) );
             StringJoiner sj = new StringJoiner("&");
             for(Map.Entry<String,String> entry : arguments.entrySet())
                 sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
             byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
             int length = out.length;
+            System.out.println("Sending request:" + sj.toString());
             
             http.setFixedLengthStreamingMode(length);
             http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
@@ -201,6 +203,7 @@ public class JPMain extends javax.swing.JPanel {
                 os.write(out);
                 os.close();
             }
+            System.out.println("Request Sent getting sequence response...");
             InputStream is = http.getInputStream();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -213,11 +216,14 @@ public class JPMain extends javax.swing.JPanel {
             String data = new String(baos.toByteArray());
             int start = data.indexOf("\"osv\":{\"sequence\":{\"id\":\"");
             int end = data.indexOf("\"",start+25);
+            System.out.println("Received request:" + data);
             String sequence_id= data.substring(start+25,end);
-            http.disconnect();
+            System.out.println("Obtained Sequence ID: sequence_id");
+            http.disconnect();            
             return Long.parseLong(sequence_id);
             
         } catch (Exception ex) {
+            System.out.println(ex.toString());
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
         }
         return -1;
