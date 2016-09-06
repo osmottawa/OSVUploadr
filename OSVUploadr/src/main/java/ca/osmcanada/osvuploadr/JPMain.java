@@ -320,7 +320,7 @@ public class JPMain extends javax.swing.JPanel {
                if (name.lastIndexOf('.') > 0) {
                     int lastIndex = name.lastIndexOf('.');
                     String str = name.substring(lastIndex);
-                    if (str.equals(".jpg")) {
+                    if (str.toLowerCase().equals(".jpg")) {
                         return true;
                     }
                 }

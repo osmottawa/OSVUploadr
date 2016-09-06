@@ -99,7 +99,7 @@ public final class Helper {
     
     public static Boolean OpenBrowser(URI uri){
         try{
-            boolean supportsBrowse = false;
+            boolean supportsBrowse = true;
             if(!Desktop.isDesktopSupported()){
                 supportsBrowse = false;
                 if(!Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)){
@@ -123,7 +123,7 @@ public final class Helper {
                 }
 
                 if (os.isWindows()) {
-                    if (runCommand("explorer", "%s", uri.toString())) return true;
+                    if (runCommand("explorer.exe", "%s", uri.toString())) return true;
                 }
             }
         }
