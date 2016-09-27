@@ -61,6 +61,7 @@ public class JPMain extends javax.swing.JPanel {
     private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
     private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
     private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
+    private final String URL_ACCESS = "http://openstreetview.com/auth/openstreetmap/client_auth";
     private String last_dir ="";
     
     UploadManager um;
@@ -77,8 +78,8 @@ public class JPMain extends javax.swing.JPanel {
     
     public String GetOSMUser() throws IOException{
         final OAuth10aService service = new ServiceBuilder()
-                           .apiKey("[api key here]")
-                           .apiSecret("[secret here]")
+                           .apiKey("rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw")
+                           .apiSecret("rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S")
                            .build(OSMApi.instance());
         
         final OAuth1RequestToken requestToken = service.getRequestToken();
@@ -95,10 +96,11 @@ public class JPMain extends javax.swing.JPanel {
         int indxEndUserId = body.indexOf("\"",indxUserId+9);
         int indxUsername= body.indexOf("display_name=\"");
         int indxEndUsername = body.indexOf("\"",indxUsername+14);
-        String user_id = body.substring(indxUserId+9,indxEndUserId);
-        String username = body.substring(indxUsername+14,indxEndUsername);
+        //String user_id = body.substring(indxUserId+9,indxEndUserId);
+        //String username = body.substring(indxUsername+14,indxEndUsername);
         
-        return user_id +";"+username;
+        //return user_id +";"+username;
+        return accessToken.getToken()+"|"+accessToken.getTokenSecret();
     } 
 
     private void sendFile(OutputStream out, String name, InputStream in, String fileName) {
@@ -124,21 +126,20 @@ public class JPMain extends javax.swing.JPanel {
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    private void SendFinished(long Sequence_id, String user_id)
-    {
+    
+    private void SendAuthTokens(String accessToken, String accessSecret){
         try
         {
-            URL url = new URL(URL_FINISH);
+            URL url = new URL(URL_ACCESS);
             URLConnection con = url.openConnection();
             HttpURLConnection http = (HttpURLConnection)con;
             http.setRequestMethod("POST"); // PUT is another valid option
             http.setDoOutput(true);
             
             Map<String,String> arguments = new HashMap<>();
-            arguments.put("externalUserId", user_id);
-            arguments.put("userType", "osm");
-            arguments.put("sequenceId", Long.toString(Sequence_id));
-            System.out.println("externalUserId:" + user_id + "|sequenceId:"+Long.toString(Sequence_id));
+            arguments.put("request_token", accessToken);
+            arguments.put("secret_token", accessSecret);
+            System.out.println("accessToken:" + accessToken + "|secret token:"+accessSecret);
             
             StringJoiner sj = new StringJoiner("&");
             for(Map.Entry<String,String> entry : arguments.entrySet())
@@ -170,7 +171,52 @@ public class JPMain extends javax.swing.JPanel {
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    private long getSequence(ImageProperties imp, String user_id, String user_name)
+    private void SendFinished(long Sequence_id, String accessToken)
+    {
+        try
+        {
+            URL url = new URL(URL_FINISH);
+            URLConnection con = url.openConnection();
+            HttpURLConnection http = (HttpURLConnection)con;
+            http.setRequestMethod("POST"); // PUT is another valid option
+            http.setDoOutput(true);
+            
+            Map<String,String> arguments = new HashMap<>();
+            arguments.put("access_token", accessToken);
+            arguments.put("sequenceId", Long.toString(Sequence_id));
+            System.out.println("accessToken:" + accessToken + "|sequenceId:"+Long.toString(Sequence_id));
+            
+            StringJoiner sj = new StringJoiner("&");
+            for(Map.Entry<String,String> entry : arguments.entrySet())
+                sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
+            byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
+            int length = out.length;
+            
+            http.setFixedLengthStreamingMode(length);
+            http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            http.connect();
+            try(OutputStream os = http.getOutputStream()) {
+                os.write(out);
+                os.close();
+            }
+            InputStream is = http.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            byte buf[] = new byte[1024];
+            int letti;
+
+            while ((letti = is.read(buf)) > 0)
+            baos.write(buf, 0, letti);
+
+            String data = new String(baos.toByteArray());
+            http.disconnect();
+            
+        }
+        catch(Exception ex){
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    private long getSequence(ImageProperties imp, String accessToken)
     {
         try {
             URL url = new URL(URL_SEQUENCE);
@@ -183,10 +229,8 @@ public class JPMain extends javax.swing.JPanel {
             df.setRoundingMode(RoundingMode.CEILING);
             System.out.println("Getting Sequence ID..");
             Map<String,String> arguments = new HashMap<>();
-            arguments.put("externalUserId", user_id);
-            arguments.put("userType", "osm");
-            arguments.put("userName", user_name);
-            arguments.put("clientToken", "2ed202ac08ea9cf8d5f290567037dcc42ed202ac08ea9cf8d5f290567037dcc4");
+            arguments.put("uploadSource", "OSVUploadr");
+            arguments.put("access_token", accessToken);
             arguments.put("currentCoordinate", df.format(imp.getLatitude())+ "," + df.format(imp.getLongitude()));
             System.out.println("currentCoordinate:" + df.format(imp.getLatitude()) + "," + df.format(imp.getLongitude()) );
             StringJoiner sj = new StringJoiner("&");
@@ -231,7 +275,7 @@ public class JPMain extends javax.swing.JPanel {
     
     
     
-    private void Upload_Image(ImageProperties imp, String user_id, String user_name, long Sequence_id)
+    private void Upload_Image(ImageProperties imp, String accessToken, long Sequence_id)
     {
         try{
             URL url = new URL(URL_PHOTO);
@@ -254,31 +298,38 @@ public class JPMain extends javax.swing.JPanel {
                 // Send our header
                 out.write(boundaryBytes);
 
-                // Send our sequence id
-                sendField(out, "sequenceId", Long.toString(Sequence_id));
-    
+                //Send access token
+                sendField(out,"access_token",accessToken);
+                
                 // Send a seperator
                 out.write(boundaryBytes);
+                
                 if(imp.getCompass()>=0){
                     // Send our compass
                     sendField(out, "headers", Double.toString(imp.getCompass()));
 
                     // Send another seperator
                     out.write(boundaryBytes);
-                }
-                
-                // Send our sequence index
-                sendField(out, "sequenceIndex", Integer.toString(imp.getSequenceNumber()));
-    
-                // Send a seperator
-                out.write(boundaryBytes);
+                }  
                 
                 // Send our coordinates
                 sendField(out, "coordinate", imp.getCoordinates());
-    
-                // Send a seperator
-                out.write(boundaryBytes);
                 
+                // Send a seperator
+                out.write(boundaryBytes);   
+                
+                // Send our sequence id
+                sendField(out, "sequenceId", Long.toString(Sequence_id));
+                
+                // Send a seperator
+                out.write(boundaryBytes);   
+                
+                // Send our sequence index
+                sendField(out, "sequenceIndex", Integer.toString(imp.getSequenceNumber()));
+                    
+                // Send a seperator
+                out.write(boundaryBytes);        
+    
 
                 String[] tokens = imp.getFilePath().split("[\\\\|/]");
                 String filename = tokens[tokens.length - 1];
@@ -311,7 +362,7 @@ public class JPMain extends javax.swing.JPanel {
         }
     }
     
-    private void Process(String dir, String usr_id, String usr_name)
+    private void Process(String dir, String accessToken)
     {
         File dir_photos = new File(dir);
         //filter only .jpgs
@@ -423,7 +474,7 @@ public class JPMain extends javax.swing.JPanel {
                 if(need_seq)
                 {
                     System.out.println("Requesting sequence ID");
-                    sequence_id=getSequence(imp,usr_id,usr_name);
+                    sequence_id=getSequence(imp,accessToken);
                     System.out.println("Obtained:" + sequence_id);
                     byte[] bytes = Long.toString(sequence_id).getBytes(StandardCharsets.UTF_8);
                     Files.write(Paths.get(f_sequence.getPath()), bytes, StandardOpenOption.CREATE); 
@@ -432,7 +483,7 @@ public class JPMain extends javax.swing.JPanel {
                 imp.setSequenceNumber(cnt);
                 cnt++; //TODO: Write count to file
                 System.out.println("Uploading image:"+ f.getPath());
-                Upload_Image(imp,usr_id,usr_name,sequence_id);
+                Upload_Image(imp,accessToken,sequence_id);
                 System.out.println("Uploaded");
                 String out =String.valueOf(cnt);
                 Files.write(Paths.get(f_cnt.getPath()),out.getBytes("UTF-8"), StandardOpenOption.TRUNCATE_EXISTING);
@@ -445,7 +496,7 @@ public class JPMain extends javax.swing.JPanel {
              
         }
         System.out.println("Sending finish for sequence:"+ sequence_id);
-        SendFinished(sequence_id, usr_id);
+        SendFinished(sequence_id, accessToken);
     }
                 
     
@@ -625,18 +676,20 @@ public class JPMain extends javax.swing.JPanel {
         {
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "decodePath", ex);
         }
-        File id = new File(decodedPath + "/id_file.txt");
-        String usr="";
+        File id = new File(decodedPath + "/access_token.txt");
+        String accessToken="";
         System.out.println("id_file exists:"+ id.exists());
         if(!id.exists())
         {
             try{
                 System.out.println("GetOSMUser");
-                String user_id = GetOSMUser();
-                Path targetPath = Paths.get("./id_file.txt");
-                byte[] bytes = user_id.getBytes(StandardCharsets.UTF_8);
+                String token = GetOSMUser();
+                Path targetPath = Paths.get("./access_token.txt");
+                byte[] bytes = token.split("\\|")[0].getBytes(StandardCharsets.UTF_8);
                 Files.write(targetPath, bytes, StandardOpenOption.CREATE); 
-                usr = user_id;
+                accessToken = token.split("\\|")[0];
+                String accessSecret = token.split("\\|")[1];
+                SendAuthTokens(accessToken,accessSecret);                
             }
             catch(Exception ex)
             {
@@ -646,9 +699,9 @@ public class JPMain extends javax.swing.JPanel {
         else
         {
             try{
-                List<String> user_id = Files.readAllLines(Paths.get(id.getPath()));
-                if(user_id.size()>0){
-                    usr=user_id.get(0); //read first line
+                List<String> token = Files.readAllLines(Paths.get(id.getPath()));
+                if(token.size()>0){
+                    accessToken=token.get(0); //read first line
                 }                
             }
             catch(Exception ex)
@@ -656,12 +709,12 @@ public class JPMain extends javax.swing.JPanel {
                 Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "readAllLines", ex);
             }
         }
-        System.out.println("User ID obtained from file or OSM:" + usr);
+        System.out.println("Access Token obtained from file or OSM:" + accessToken);
         
         //Start processing list
         for(String item:listDir.getItems()){
             System.out.println("Processing folder:"+item);
-            Process(item,usr.split(";")[0],usr.split(";")[1]);
+            Process(item,accessToken);
         }
         //um = new UploadManager(listDir.getItems());
         //um.start();

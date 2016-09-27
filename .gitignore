@@ -12,3 +12,4 @@
 hs_err_pid*
 /OSVUploadr/target/
 OSVUploadr/id_file.txt
+OSVUploadr/access_token.txt
