@@ -69,10 +69,12 @@ public class JPMain extends javax.swing.JPanel {
     private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
 <<<<<<< HEAD
     private final String URL_ACCESS = "http://openstreetview.com/auth/openstreetmap/client_auth";
+    private final String API_KEY = "rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw";
+    private final String API_SECRET = "rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S";
 =======
     private final String API_KEY = "[API KEY HERE]";
     private final String API_SECRET = "[SECRET KEY HERE]";
->>>>>>> Automatic oAuth
+>>>>>>> a729213f18b2ea4e3764f6d54d02fe2315a0ad2a
     private String last_dir ="";
     
     UploadManager um;
@@ -116,13 +118,8 @@ public class JPMain extends javax.swing.JPanel {
     
     public String GetOSMUser() throws IOException{
         final OAuth10aService service = new ServiceBuilder()
-<<<<<<< HEAD
-                           .apiKey("rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw")
-                           .apiSecret("rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S")
-=======
                            .apiKey(API_KEY)
                            .apiSecret(API_SECRET)
->>>>>>> Automatic oAuth
                            .build(OSMApi.instance());
         
         final OAuth1RequestToken requestToken = service.getRequestToken();
