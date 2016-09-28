@@ -11,7 +11,7 @@ import com.github.scribejava.core.model.OAuth1RequestToken;
  * @author Jamie Nadeau
  */
 public class OSMApi extends DefaultApi10a {
-    private static final String AUTHORIZE_URL = "http://www.openstreetmap.org/oauth/authorize?oauth_token=%s";
+    private static final String AUTHORIZE_URL = "https://www.openstreetmap.org/oauth/authorize?oauth_token=%s";
     private static final String REQUEST_TOKEN_RESOURCE = "www.openstreetmap.org/oauth/request_token";
     private static final String ACCESS_TOKEN_RESOURCE = "www.openstreetmap.org/oauth/access_token";
     

@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import ca.osmcanada.osvuploadr.struct.ImageProperties;
-import com.drew.metadata.exif.ExifSubIFDDirectory;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -49,13 +48,17 @@ import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import ca.osmcanada.osvuploadr.Utils.*;
 import ca.osmcanada.osvuploadr.struct.PageContent;
+import java.nio.charset.Charset;
 import org.apache.http.client.HttpClient;
-import org.apache.http.HttpException;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.CookieStore;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.HttpClientBuilder;
+
 
 /**
  *
@@ -63,7 +66,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
  */
 public class JPMain extends javax.swing.JPanel {
 
-    private final String BASE_URL="http://www.openstreetmap.org/";
+    private final String BASE_URL="https://www.openstreetmap.org/";
     private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
     private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
     private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
@@ -94,11 +97,95 @@ public class JPMain extends javax.swing.JPanel {
         
         //Automated grant and login***************************************
         //Get logon form
-        HttpClient client = HttpClientBuilder.create().build();
+        CookieStore httpCookieStore = new BasicCookieStore();        
+        HttpClient client = HttpClientBuilder.create().setDefaultCookieStore(httpCookieStore).build();
         //post.setHeader("User-Agent", USER_AGENT);
         try{
             PageContent pc = Helper.GetPageContent(url,client);
-            System.out.println(pc.GetPage());
+            
+            List<Cookie> cookies = httpCookieStore.getCookies();
+            System.out.println("Getting OSM Login page");
+            String page = pc.GetPage();
+            
+            System.out.println("Sending username and password");
+            
+            int start_indx = page.indexOf("value=\"",page.indexOf("name=\"authenticity_token\""))+7;
+            int end_indx = page.indexOf("\"",start_indx);                     
+            
+            String utf8 = "✓";            
+            String authenticity_token = page.substring(start_indx,end_indx);
+            
+            start_indx = page.indexOf("value=\"",page.indexOf("name=\"referer\""))+7;
+            end_indx = page.indexOf("\"",start_indx);
+            String referer = page.substring(start_indx,end_indx);
+            
+            Map<String,String> arguments = new HashMap<>();
+            arguments.put("utf8", utf8);
+            arguments.put("authenticity_token", authenticity_token);
+            arguments.put("referer", referer);
+            arguments.put("username", usr);
+            arguments.put("password", psw);
+            arguments.put("commit", "Login");
+            arguments.put("openid_url", "");
+            
+            System.out.println("Logging in");
+            page = sendForm(BASE_URL+"login",arguments,"POST",cookies);
+            
+            
+            
+            //Proccessing grant access page
+            System.out.println("Processing Granting Access page");
+            start_indx = page.indexOf("<form");//Find form tag
+            start_indx = page.indexOf("action=\"", start_indx)+8; //get action url
+            end_indx = page.indexOf("\"",start_indx); //get closing tag
+            String action_url = page.substring(start_indx, end_indx);
+            if(action_url.startsWith("/")){
+                action_url=BASE_URL+ action_url.substring(1, action_url.length());
+            }
+            else if(!action_url.toLowerCase().startsWith("http")){
+                //Need to post same level as current url
+                end_indx=url.lastIndexOf("/")+1;
+                action_url=url.substring(0, end_indx)+action_url;
+            }
+            
+            start_indx = page.indexOf("name=\"authenticity_token\"");
+            start_indx = FindOpening(page,start_indx,"<");
+            start_indx = page.indexOf("value=\"",start_indx)+7;
+            end_indx = page.indexOf("\"",start_indx);
+            authenticity_token = page.substring(start_indx,end_indx);
+            
+            start_indx = page.indexOf("name=\"oauth_token\"");
+            start_indx = FindOpening(page,start_indx,"<");
+            start_indx = page.indexOf("value=\"",start_indx)+7;
+            end_indx = page.indexOf("\"",start_indx);
+            String oauth_token=page.substring(start_indx, end_indx);
+                      
+            arguments.clear();
+            arguments.put("utf8", utf8);
+            arguments.put("authenticity_token", authenticity_token);
+            arguments.put("oauth_token", oauth_token);
+            arguments.put("allow_read_prefs", "yes");
+            arguments.put("commit", "Grant+Access");
+            
+            //Get PIN
+            System.out.println("Submitting grant access");
+            page = sendForm(action_url,arguments,"POST",cookies);
+            
+            //Find lovely PIN code in page that might be multilingual...(fun)
+            start_indx = page.indexOf("class=\"content-body\"");
+            end_indx = page.indexOf("</div>",start_indx);
+            String tmp = page.substring(start_indx,end_indx); //Get aproximate location of pin code
+            
+            Pattern p = Pattern.compile("([A-Za-z0-9]){15,25}");
+            Matcher m = p.matcher(tmp);
+            String pin = "";
+            if(m.find())
+            {
+                pin = m.group();
+            }
+            final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, pin);
+            return accessToken.getToken()+"|"+accessToken.getTokenSecret();
+            
         }
         catch(Exception ex)
         {
@@ -123,21 +210,111 @@ public class JPMain extends javax.swing.JPanel {
         //java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
         String pin_code = JOptionPane.showInputDialog(null, "Authorization window has opened, please paste authorization code below once authorized.\nWith out the \".\" at the end", "Authorization Required", JOptionPane.INFORMATION_MESSAGE);
         final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, pin_code);
-        final OAuthRequest request = new OAuthRequest(Verb.GET, BASE_URL + "api/0.6/user/details", service);
-        service.signRequest(accessToken, request);
-        Response response = request.send();
-        String body = response.getBody();
-        int indxUserId= body.indexOf("user id=\"");
-        int indxEndUserId = body.indexOf("\"",indxUserId+9);
-        int indxUsername= body.indexOf("display_name=\"");
-        int indxEndUsername = body.indexOf("\"",indxUsername+14);
+        //final OAuthRequest request = new OAuthRequest(Verb.GET, BASE_URL + "api/0.6/user/details", service);
+        //service.signRequest(accessToken, request);
+        //Response response = request.send();
+        //String body = response.getBody();
+        //int indxUserId= body.indexOf("user id=\"");
+        //int indxEndUserId = body.indexOf("\"",indxUserId+9);
+        //int indxUsername= body.indexOf("display_name=\"");
+        //int indxEndUsername = body.indexOf("\"",indxUsername+14);
         //String user_id = body.substring(indxUserId+9,indxEndUserId);
         //String username = body.substring(indxUsername+14,indxEndUsername);
         
         //return user_id +";"+username;
         return accessToken.getToken()+"|"+accessToken.getTokenSecret();
-    } 
+    }
+    
+    private int FindOpening(String str,int current_index,String OpeningChar){
+        for(int i=current_index;i>=0;i--){
+            if(str.substring(i,i+1).equals("<")){
+                    return i;
+                }
+        }
+        return 0;
+    }
 
+    private String sendForm(String target_url,Map<String,String> arguments,String method,List<Cookie> cookielist){
+        try{
+            URL url = new URL(target_url);
+            HttpURLConnection con = (HttpURLConnection)url.openConnection();
+            //HttpURLConnection http = (HttpURLConnection)con;
+            con.setRequestMethod(method); // PUT is another valid option
+            con.setDoOutput(true);
+            con.setInstanceFollowRedirects(false);
+            String cookiestr="";
+            if(cookielist!=null){
+                if(cookielist.size()>0){
+                    for(Cookie cookie:cookielist){
+                        if(!cookiestr.equals("")){
+                            cookiestr+=";" + cookie.getName() +"=" +cookie.getValue();
+                        }
+                        else{
+                            cookiestr+=cookie.getName() +"=" +cookie.getValue();
+                        }
+                    }
+                    con.setRequestProperty("Cookie", cookiestr);
+                }
+            }
+            
+            con.setReadTimeout(5000);
+            
+            StringJoiner sj = new StringJoiner("&");
+            for(Map.Entry<String,String> entry : arguments.entrySet())
+                sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
+            byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
+            int length = out.length;
+            
+            con.setFixedLengthStreamingMode(length);
+            con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            con.setRequestProperty("Accept-Language", "en-us;");
+            con.connect();
+            try(OutputStream os = con.getOutputStream()) {
+                os.write(out);
+                os.close();
+            }
+            
+            boolean redirect = false;
+            int status = con.getResponseCode();
+            
+            if(status != HttpURLConnection.HTTP_OK) {
+		if (status == HttpURLConnection.HTTP_MOVED_TEMP
+			|| status == HttpURLConnection.HTTP_MOVED_PERM
+				|| status == HttpURLConnection.HTTP_SEE_OTHER)
+		redirect = true;
+            }
+            
+            if(redirect){
+                String newURL = con.getHeaderField("Location");
+                String cookies = con.getHeaderField("Set-Cookie");
+                if(cookies == null){
+                    cookies= cookiestr;
+                }
+                con = (HttpURLConnection) new URL(newURL).openConnection();
+                con.setRequestProperty("Cookie", cookies);                
+            }
+            
+            InputStream is = con.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            byte buf[] = new byte[1024];
+            int letti;
+
+            while ((letti = is.read(buf)) > 0)
+            baos.write(buf, 0, letti);
+
+            String data = new String(baos.toByteArray(),Charset.forName("UTF-8"));
+            con.disconnect();
+            
+            return data;
+            
+        }
+        catch(Exception ex){
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return "";
+    }
+    
     private void sendFile(OutputStream out, String name, InputStream in, String fileName) {
         try {
             String o = "Content-Disposition: form-data; name=\"" + URLEncoder.encode(name,"UTF-8") + "\"; filename=\"" + URLEncoder.encode(fileName,"UTF-8") + "\"\r\nContent-Type: image/jpeg\r\n\r\n";
@@ -545,21 +722,21 @@ public class JPMain extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jButton1 = new javax.swing.JButton();
+        jbAdd = new javax.swing.JButton();
         listDir = new java.awt.List();
         jLabel1 = new javax.swing.JLabel();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
-        jButton5 = new javax.swing.JButton();
+        jbRemoveDup = new javax.swing.JButton();
+        jbUpload = new javax.swing.JButton();
+        jbExit = new javax.swing.JButton();
+        jbRemove = new javax.swing.JButton();
 
-        jButton1.setText("Add Folder");
-        jButton1.setMaximumSize(new java.awt.Dimension(123, 23));
-        jButton1.setMinimumSize(new java.awt.Dimension(123, 23));
-        jButton1.setPreferredSize(new java.awt.Dimension(123, 23));
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        jbAdd.setText("Add Folder");
+        jbAdd.setMaximumSize(new java.awt.Dimension(123, 23));
+        jbAdd.setMinimumSize(new java.awt.Dimension(123, 23));
+        jbAdd.setPreferredSize(new java.awt.Dimension(123, 23));
+        jbAdd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                jbAddActionPerformed(evt);
             }
         });
 
@@ -572,35 +749,35 @@ public class JPMain extends javax.swing.JPanel {
 
         jLabel1.setText("Directories");
 
-        jButton2.setText("Remove Duplicates");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        jbRemoveDup.setText("Remove Duplicates");
+        jbRemoveDup.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                jbRemoveDupActionPerformed(evt);
             }
         });
 
-        jButton3.setText("Upload");
-        jButton3.setMaximumSize(new java.awt.Dimension(123, 23));
-        jButton3.setMinimumSize(new java.awt.Dimension(123, 23));
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        jbUpload.setText("Upload");
+        jbUpload.setMaximumSize(new java.awt.Dimension(123, 23));
+        jbUpload.setMinimumSize(new java.awt.Dimension(123, 23));
+        jbUpload.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                jbUploadActionPerformed(evt);
             }
         });
 
-        jButton4.setText("Exit");
-        jButton4.setMaximumSize(new java.awt.Dimension(123, 23));
-        jButton4.setMinimumSize(new java.awt.Dimension(123, 23));
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        jbExit.setText("Exit");
+        jbExit.setMaximumSize(new java.awt.Dimension(123, 23));
+        jbExit.setMinimumSize(new java.awt.Dimension(123, 23));
+        jbExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                jbExitActionPerformed(evt);
             }
         });
 
-        jButton5.setText("Remove Folder");
-        jButton5.addActionListener(new java.awt.event.ActionListener() {
+        jbRemove.setText("Remove Folder");
+        jbRemove.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton5ActionPerformed(evt);
+                jbRemoveActionPerformed(evt);
             }
         });
 
@@ -618,14 +795,14 @@ public class JPMain extends javax.swing.JPanel {
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(24, 24, 24)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jButton5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addComponent(jbAdd, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jbRemove, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jButton2, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jButton3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jButton4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                                    .addComponent(jbRemoveDup, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jbUpload, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jbExit, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -637,15 +814,15 @@ public class JPMain extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(listDir, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jbAdd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton5)
+                        .addComponent(jbRemove)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton2)
+                        .addComponent(jbRemoveDup)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jbUpload, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jbExit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(41, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -654,12 +831,12 @@ public class JPMain extends javax.swing.JPanel {
         // TODO add your handling code here:
     }//GEN-LAST:event_listDirActionPerformed
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+    private void jbExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbExitActionPerformed
         // TODO add your handling code here:
         System.exit(0);
-    }//GEN-LAST:event_jButton4ActionPerformed
+    }//GEN-LAST:event_jbExitActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void jbAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbAddActionPerformed
         JFileChooser fc = new JFileChooser();
         if(!last_dir.isEmpty()){
             fc.setCurrentDirectory(new java.io.File(last_dir)); // start at application current directory
@@ -688,9 +865,9 @@ public class JPMain extends javax.swing.JPanel {
                 }                
             }
         }
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_jbAddActionPerformed
 
-    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+    private void jbRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRemoveActionPerformed
         int selectedCnt = listDir.getSelectedItems().length;
         if(selectedCnt > 0)
         {
@@ -699,9 +876,9 @@ public class JPMain extends javax.swing.JPanel {
                 listDir.remove(listDir.getSelectedIndexes()[i]);
             }
         }
-    }//GEN-LAST:event_jButton5ActionPerformed
+    }//GEN-LAST:event_jbRemoveActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void jbUploadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbUploadActionPerformed
         String path = ca.osmcanada.osvuploadr.JFMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath = "";
         try{
@@ -717,8 +894,40 @@ public class JPMain extends javax.swing.JPanel {
         if(!id.exists())
         {
             try{
+                String[] buttons={"Automatically","Manually","Cancel"};
+                int rc = JOptionPane.showOptionDialog(null,"You must login to OSM to continue the upload. Would you like the automated version or the manual version?","Confirmation",JOptionPane.INFORMATION_MESSAGE,0,null,buttons,buttons[0]);
+                String token="";
                 System.out.println("GetOSMUser");
-                String token = GetOSMUser();
+                switch(rc){
+                    case 0:                        
+                        String usr = "";
+                        String psw = "";
+                        JTextField tf = new JTextField();
+                        JPasswordField pf = new JPasswordField();
+                        rc = JOptionPane.showConfirmDialog(null,tf,"Enter email address or OSM username", JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+                        if(rc == JOptionPane.OK_OPTION){
+                            usr = tf.getText();
+                        }
+                        else{
+                            return;
+                        }
+                        
+                        rc = JOptionPane.showConfirmDialog(null,pf,"Please enter password", JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+                        if(rc == JOptionPane.OK_OPTION){
+                            psw = new String(pf.getPassword());
+                        }
+                        else{
+                            return;
+                        }
+                        token = GetOSMUser(usr,psw);                     
+                        break;
+                    case 1:
+                        token = GetOSMUser();
+                        break;
+                    case 2:
+                        return;
+                        
+                }
                 Path targetPath = Paths.get("./access_token.txt");
                 byte[] bytes = token.split("\\|")[0].getBytes(StandardCharsets.UTF_8);
                 Files.write(targetPath, bytes, StandardOpenOption.CREATE); 
@@ -754,23 +963,32 @@ public class JPMain extends javax.swing.JPanel {
         //um = new UploadManager(listDir.getItems());
         //um.start();
                 
-    }//GEN-LAST:event_jButton3ActionPerformed
+    }//GEN-LAST:event_jbUploadActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void jbRemoveDupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRemoveDupActionPerformed
+        JFMain topframe = (JFMain)SwingUtilities.getWindowAncestor(this);
+        topframe.ShowInfoBox();
+        topframe.SetInfoBoxText("test");
         for(String item:listDir.getItems()){
-            FolderCleaner fc = new FolderCleaner(item);
-            fc.RemoveDuplicates();  
-        }        
-    }//GEN-LAST:event_jButton2ActionPerformed
+            Thread t = new Thread(){
+                public void run(){
+                    FolderCleaner fc = new FolderCleaner(item);
+                    fc.setInfoBox(topframe);
+                    fc.RemoveDuplicates();  
+                }
+            };
+            t.start();
+        }
+    }//GEN-LAST:event_jbRemoveDupActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton5;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JButton jbAdd;
+    private javax.swing.JButton jbExit;
+    private javax.swing.JButton jbRemove;
+    private javax.swing.JButton jbRemoveDup;
+    private javax.swing.JButton jbUpload;
     private java.awt.List listDir;
     // End of variables declaration//GEN-END:variables
 }

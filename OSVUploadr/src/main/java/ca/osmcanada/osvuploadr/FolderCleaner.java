@@ -32,6 +32,7 @@ public class FolderCleaner {
     int dist_threshold = 4; // Minimum distance a photo should move to not be considered a duplicate (in meters)
     int radius_threshold = 20; // Minimum turn radius a photo should move to not be considered a duplicate (degrees)
     String duplicate_folder="duplicates";
+    JFMain info=null;
     
     private double calc_distance(double lon1, double lat1, double lon2, double lat2){
         //haversine formula
@@ -85,6 +86,9 @@ public class FolderCleaner {
         }});
         
         for(File f:file_list){
+            if(info!=null){
+                info.SetInfoBoxText(f.getPath());
+            }
             ImageProperties imp = Helper.getImageProperties(f);
             if(is_first){
                 is_first=false;
@@ -151,10 +155,18 @@ public class FolderCleaner {
             }
         }
         do_science();
+        if(info!=null){
+            info.SetInfoBoxText("Done");
+        }
+    }
+    
+    public void setInfoBox(JFMain frame){
+        info=frame;
     }
     
     public FolderCleaner(String Folder){
         _folder=Folder;
     }
+    
     
 }
