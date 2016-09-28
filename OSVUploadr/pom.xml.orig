@@ -3,7 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ca.osmcanada</groupId>
     <artifactId>OSVUploadr</artifactId>
+<<<<<<< HEAD
+    <version>0.1.2.1.1-ALPHA</version>
+=======
     <version>0.1.2.2-ALPHA</version>
+>>>>>>> Automatic oAuth
     <packaging>jar</packaging>
     <dependencies>
     <dependency>

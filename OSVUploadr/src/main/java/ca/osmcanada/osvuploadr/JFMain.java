@@ -12,7 +12,7 @@ import java.awt.BorderLayout;
  * @author Jamie Nadeau
  */
 public class JFMain extends javax.swing.JFrame {
-
+    static JPInfoBox jib = new JPInfoBox();
     /**
      * Creates new form JFMain
      */
@@ -22,7 +22,20 @@ public class JFMain extends javax.swing.JFrame {
         this.setSize(640,320);
         this.setTitle("OSVUploadr");
     }
-
+    
+    public void ShowInfoBox(){
+        jib.setVisible(true);
+        this.setSize(640,470);
+        this.pack();
+    }
+    public void HideInfoBox(){
+        jib.setVisible(false);
+        this.setSize(640,320);
+    }
+    
+    public void SetInfoBoxText(String str){
+        jib.SetProcessingText(str);
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -81,7 +94,9 @@ public class JFMain extends javax.swing.JFrame {
                 JFMain  jf =new JFMain();
                 JPMain jp = new JPMain();
                 jp.setVisible(true);
-                jf.add(jp,BorderLayout.CENTER);
+                jib.setVisible(false);
+                jf.add(jp,BorderLayout.NORTH);
+                jf.add(jib,BorderLayout.SOUTH);
                 jf.setVisible(true);
             }
         });
