@@ -19,7 +19,7 @@
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Component id="jLabel1" min="-2" pref="79" max="-2" attributes="0"/>
+                  <Component id="jlDirectories" min="-2" pref="79" max="-2" attributes="0"/>
                   <Group type="102" attributes="0">
                       <Component id="listDir" min="-2" pref="456" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
@@ -49,7 +49,7 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace min="-2" pref="19" max="-2" attributes="0"/>
-              <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+              <Component id="jlDirectories" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="listDir" min="-2" pref="222" max="-2" attributes="0"/>
@@ -96,7 +96,7 @@
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="listDirActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JLabel" name="jLabel1">
+    <Component class="javax.swing.JLabel" name="jlDirectories">
       <Properties>
         <Property name="text" type="java.lang.String" value="Directories"/>
       </Properties>

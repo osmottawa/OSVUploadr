@@ -19,6 +19,8 @@ import ca.osmcanada.osvuploadr.struct.ImageProperties;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 
 /**
@@ -33,6 +35,8 @@ public class FolderCleaner {
     int radius_threshold = 20; // Minimum turn radius a photo should move to not be considered a duplicate (degrees)
     String duplicate_folder="duplicates";
     JFMain info=null;
+    Locale l;
+    ResourceBundle r;
     
     private double calc_distance(double lon1, double lat1, double lon2, double lat2){
         //haversine formula
@@ -156,7 +160,11 @@ public class FolderCleaner {
         }
         do_science();
         if(info!=null){
-            info.SetInfoBoxText("Done");
+            try{
+                info.SetInfoBoxText(new String(r.getString("done").getBytes(),"UTF-8"));
+            }
+            catch(Exception ex)
+            {}
         }
     }
     
@@ -164,8 +172,15 @@ public class FolderCleaner {
         info=frame;
     }
     
+    public void setLocale(Locale locale){
+        l=locale;
+        r=ResourceBundle.getBundle("Bundle",l);
+    }
+    
     public FolderCleaner(String Folder){
         _folder=Folder;
+        l=Locale.getDefault();
+        r=ResourceBundle.getBundle("Bundle",l);
     }
     
     

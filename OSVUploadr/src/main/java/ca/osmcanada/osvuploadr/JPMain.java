@@ -52,7 +52,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import ca.osmcanada.osvuploadr.Utils.*;
 import ca.osmcanada.osvuploadr.struct.PageContent;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.CookieStore;
 import org.apache.http.cookie.Cookie;
@@ -74,17 +77,43 @@ public class JPMain extends javax.swing.JPanel {
     private final String API_KEY = "rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw";
     private final String API_SECRET = "rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S";
     private String last_dir ="";
+    private Locale l;
+    private ResourceBundle r;
     
     UploadManager um;
     /**
      * Creates new form JPMain
      */   
-    public JPMain() {
+    public JPMain(Locale locale) {
+        l = locale;
         try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         }
         catch(Exception ex){}
         initComponents();
+        try{
+        r=ResourceBundle.getBundle("Bundle",l);
+        }
+        catch(Exception ex){
+            System.out.println(ex.toString());
+        }
+        
+        SetUILang();
+        
+    }
+    
+    private void SetUILang(){
+        try{
+            jlDirectories.setText(new String(r.getString("Directories").getBytes(),"UTF-8"));
+            jbAdd.setText(new String(r.getString("Add_Folder").getBytes(),"UTF-8"));
+            jbRemove.setText(new String(r.getString("Remove_Folder").getBytes(),"UTF-8"));
+            jbRemoveDup.setText(new String(r.getString("Remove_Duplicates").getBytes(),"UTF-8"));
+            jbUpload.setText(new String(r.getString("Upload").getBytes(),"UTF-8"));
+            jbExit.setText(new String(r.getString("Exit").getBytes(),"UTF-8"));
+        }
+        catch(Exception ex){
+            
+        }
     }
     
     public String GetOSMUser(String usr, String psw)throws IOException{
@@ -208,7 +237,7 @@ public class JPMain extends javax.swing.JPanel {
         String url = service.getAuthorizationUrl(requestToken);
         Helper.OpenBrowser(java.net.URI.create(url));
         //java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
-        String pin_code = JOptionPane.showInputDialog(null, "Authorization window has opened, please paste authorization code below once authorized.\nWith out the \".\" at the end", "Authorization Required", JOptionPane.INFORMATION_MESSAGE);
+        String pin_code = JOptionPane.showInputDialog(null, new String(r.getString("auth_window_opened").getBytes(),"UTF-8"), new String(r.getString("auth_required").getBytes(),"UTF-8"), JOptionPane.INFORMATION_MESSAGE);
         final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, pin_code);
         //final OAuthRequest request = new OAuthRequest(Verb.GET, BASE_URL + "api/0.6/user/details", service);
         //service.signRequest(accessToken, request);
@@ -724,7 +753,7 @@ public class JPMain extends javax.swing.JPanel {
 
         jbAdd = new javax.swing.JButton();
         listDir = new java.awt.List();
-        jLabel1 = new javax.swing.JLabel();
+        jlDirectories = new javax.swing.JLabel();
         jbRemoveDup = new javax.swing.JButton();
         jbUpload = new javax.swing.JButton();
         jbExit = new javax.swing.JButton();
@@ -747,7 +776,7 @@ public class JPMain extends javax.swing.JPanel {
             }
         });
 
-        jLabel1.setText("Directories");
+        jlDirectories.setText("Directories");
 
         jbRemoveDup.setText("Remove Duplicates");
         jbRemoveDup.addActionListener(new java.awt.event.ActionListener() {
@@ -788,7 +817,7 @@ public class JPMain extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jlDirectories, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(listDir, javax.swing.GroupLayout.PREFERRED_SIZE, 456, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -809,7 +838,7 @@ public class JPMain extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(19, 19, 19)
-                .addComponent(jLabel1)
+                .addComponent(jlDirectories)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(listDir, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -837,6 +866,7 @@ public class JPMain extends javax.swing.JPanel {
     }//GEN-LAST:event_jbExitActionPerformed
 
     private void jbAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbAddActionPerformed
+        try{
         JFileChooser fc = new JFileChooser();
         if(!last_dir.isEmpty()){
             fc.setCurrentDirectory(new java.io.File(last_dir)); // start at application current directory
@@ -844,7 +874,7 @@ public class JPMain extends javax.swing.JPanel {
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
-            int response = JOptionPane.showConfirmDialog(null, "Do you wish to add all immediate subfolders of this folder?", "Add subfolders?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(),"UTF-8"), new String(r.getString("add_subfolders").getBytes(),"UTF-8"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if(response == JOptionPane.NO_OPTION){
                 File folder = fc.getSelectedFile();
                 listDir.add(folder.getPath());
@@ -865,6 +895,9 @@ public class JPMain extends javax.swing.JPanel {
                 }                
             }
         }
+        }
+        catch(UnsupportedEncodingException ex)
+        {}
     }//GEN-LAST:event_jbAddActionPerformed
 
     private void jbRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRemoveActionPerformed
@@ -894,8 +927,8 @@ public class JPMain extends javax.swing.JPanel {
         if(!id.exists())
         {
             try{
-                String[] buttons={"Automatically","Manually","Cancel"};
-                int rc = JOptionPane.showOptionDialog(null,"You must login to OSM to continue the upload. Would you like the automated version or the manual version?","Confirmation",JOptionPane.INFORMATION_MESSAGE,0,null,buttons,buttons[0]);
+                String[] buttons={new String(r.getString("automatically").getBytes(),"UTF-8"),new String(r.getString("manually").getBytes(),"UTF-8"),new String(r.getString("cancel").getBytes(),"UTF-8")};
+                int rc = JOptionPane.showOptionDialog(null,new String(r.getString("login_to_osm").getBytes(),"UTF-8"),new String(r.getString("confirmation").getBytes(),"UTF-8"),JOptionPane.INFORMATION_MESSAGE,0,null,buttons,buttons[0]);
                 String token="";
                 System.out.println("GetOSMUser");
                 switch(rc){
@@ -904,7 +937,7 @@ public class JPMain extends javax.swing.JPanel {
                         String psw = "";
                         JTextField tf = new JTextField();
                         JPasswordField pf = new JPasswordField();
-                        rc = JOptionPane.showConfirmDialog(null,tf,"Enter email address or OSM username", JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+                        rc = JOptionPane.showConfirmDialog(null,tf,new String(r.getString("email_osm_usr").getBytes(),"UTF-8"), JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
                         if(rc == JOptionPane.OK_OPTION){
                             usr = tf.getText();
                         }
@@ -912,7 +945,7 @@ public class JPMain extends javax.swing.JPanel {
                             return;
                         }
                         
-                        rc = JOptionPane.showConfirmDialog(null,pf,"Please enter password", JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
+                        rc = JOptionPane.showConfirmDialog(null,pf,new String(r.getString("enter_password").getBytes(),"UTF-8"), JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
                         if(rc == JOptionPane.OK_OPTION){
                             psw = new String(pf.getPassword());
                         }
@@ -973,6 +1006,7 @@ public class JPMain extends javax.swing.JPanel {
             Thread t = new Thread(){
                 public void run(){
                     FolderCleaner fc = new FolderCleaner(item);
+                    fc.setLocale(l);
                     fc.setInfoBox(topframe);
                     fc.RemoveDuplicates();  
                 }
@@ -983,12 +1017,12 @@ public class JPMain extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JButton jbAdd;
     private javax.swing.JButton jbExit;
     private javax.swing.JButton jbRemove;
     private javax.swing.JButton jbRemoveDup;
     private javax.swing.JButton jbUpload;
+    private javax.swing.JLabel jlDirectories;
     private java.awt.List listDir;
     // End of variables declaration//GEN-END:variables
 }

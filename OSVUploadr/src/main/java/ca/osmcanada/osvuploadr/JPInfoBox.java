@@ -5,6 +5,8 @@
  */
 package ca.osmcanada.osvuploadr;
 
+import java.util.Locale;
+import java.util.ResourceBundle;
 import javax.swing.UIManager;
 
 /**
@@ -13,17 +15,29 @@ import javax.swing.UIManager;
  */
 public class JPInfoBox extends javax.swing.JPanel {
 
+    private Locale l;
+    private ResourceBundle r;
     /**
      * Creates new form JPInfoBox
      */
-    public JPInfoBox() {
+    public JPInfoBox(Locale locale) {
+        l=locale;
         try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         }
         catch(Exception ex){}
         initComponents();
+        r=ResourceBundle.getBundle("Bundle",l);
+        SetUILang();
     }
 
+    private void SetUILang(){
+        try{
+            jlCurrentlyProc.setText(new String(r.getString("currently_processing").getBytes(),"UTF-8"));
+        }
+        catch(Exception ex)
+        {}
+    }
     public void SetProcessingText(String str){
         jlProcessing.setText(str);
     }
@@ -36,12 +50,12 @@ public class JPInfoBox extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jLabel1 = new javax.swing.JLabel();
+        jlCurrentlyProc = new javax.swing.JLabel();
         jlProcessing = new javax.swing.JLabel();
 
         setPreferredSize(new java.awt.Dimension(623, 150));
 
-        jLabel1.setText("Currently Processing:");
+        jlCurrentlyProc.setText("Currently Processing:");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -49,7 +63,7 @@ public class JPInfoBox extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel1)
+                .addComponent(jlCurrentlyProc)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jlProcessing, javax.swing.GroupLayout.DEFAULT_SIZE, 426, Short.MAX_VALUE)
                 .addContainerGap())
@@ -59,7 +73,7 @@ public class JPInfoBox extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
+                    .addComponent(jlCurrentlyProc)
                     .addComponent(jlProcessing, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(78, Short.MAX_VALUE))
         );
@@ -67,7 +81,7 @@ public class JPInfoBox extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jlCurrentlyProc;
     private javax.swing.JLabel jlProcessing;
     // End of variables declaration//GEN-END:variables
 }

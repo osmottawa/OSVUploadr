@@ -6,13 +6,14 @@
 package ca.osmcanada.osvuploadr;
 
 import java.awt.BorderLayout;
+import java.util.Locale;
 
 /**
  *
  * @author Jamie Nadeau
  */
 public class JFMain extends javax.swing.JFrame {
-    static JPInfoBox jib = new JPInfoBox();
+    static JPInfoBox jib;
     /**
      * Creates new form JFMain
      */
@@ -91,8 +92,10 @@ public class JFMain extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
+                Locale l = Locale.getDefault();
                 JFMain  jf =new JFMain();
-                JPMain jp = new JPMain();
+                JPMain jp = new JPMain(l);
+                jib=new JPInfoBox(l);
                 jp.setVisible(true);
                 jib.setVisible(false);
                 jf.add(jp,BorderLayout.NORTH);

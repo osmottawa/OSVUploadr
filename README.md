@@ -16,6 +16,9 @@ To start the application you need the java runtime environment(JRE) version 1.8+
 Once you have added the folders to be processed, press the "**Remove Duplicates**" button.
 This is a **non destructive** option, it will simply move the duplicates into a folder called duplicates. If you ever need them again they will be available. This will process every folder in the directory list.
 
+## Contribute ##
+If you want to contribute to the translation of this application you may do so [here](https://www.transifex.com/james2432/osvuploadr)
+Currently the application is only available in English, French and Spanish. If you need a language added to the project, just open an issue on this github page.
 
 ## Known issues ##
 - Upload process is not threaded, so the upload button will look frozen until it finishes the upload.
