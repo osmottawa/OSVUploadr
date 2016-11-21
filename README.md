@@ -23,4 +23,4 @@ Currently the application is only available in English, French and Spanish. If y
 ## Known issues ##
 - Upload process is not threaded, so the upload button will look frozen until it finishes the upload.
 - If images aren't geotagged the application will probably crash
-- Application is only for action cameras. I will eventually incorporate images/videos taken from the APP.
+- Application is only for action cameras(geotagged images with original photo date exif). This includes photos taken for mapillary in jpg format as well as photos you have geotagged yourself. I will eventually incorporate images/videos taken from the APP.

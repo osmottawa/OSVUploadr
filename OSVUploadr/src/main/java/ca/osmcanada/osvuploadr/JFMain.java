@@ -93,6 +93,7 @@ public class JFMain extends javax.swing.JFrame {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 Locale l = Locale.getDefault();
+                System.out.println("Language:" + l.getLanguage() + " Country:" + l.getCountry());
                 JFMain  jf =new JFMain();
                 JPMain jp = new JPMain(l);
                 jib=new JPInfoBox(l);
