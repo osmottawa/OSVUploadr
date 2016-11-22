@@ -871,29 +871,41 @@ public class JPMain extends javax.swing.JPanel {
         if(!last_dir.isEmpty()){
             fc.setCurrentDirectory(new java.io.File(last_dir)); // start at application current directory
         }
+        fc.setMultiSelectionEnabled(true);
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
-            int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(),"UTF-8"), new String(r.getString("add_subfolders").getBytes(),"UTF-8"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if(response == JOptionPane.NO_OPTION){
-                File folder = fc.getSelectedFile();
-                listDir.add(folder.getPath());
-                last_dir=folder.getPath();
-            }
-            else if (response == JOptionPane.YES_OPTION)
-            {
-                //Get a list of subdirectories
-                String[] subDirs = fc.getSelectedFile().list(new FilenameFilter(){
-                    @Override
-                    public boolean accept(File current, String name){
-                        return new File(current,name).isDirectory();
-                    }
-                });
+            if(fc.getSelectedFiles().length==1){
+                int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(),"UTF-8"), new String(r.getString("add_subfolders").getBytes(),"UTF-8"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                if(response == JOptionPane.NO_OPTION){
+                    File folder = fc.getSelectedFile();
+                    listDir.add(folder.getPath());
+                    last_dir=folder.getPath();
+                }
+                else if (response == JOptionPane.YES_OPTION)
+                {
+                    //Get a list of subdirectories
+                    String[] subDirs = fc.getSelectedFile().list(new FilenameFilter(){
+                        @Override
+                        public boolean accept(File current, String name){
+                            return new File(current,name).isDirectory();
+                        }
+                    });
                 
-                for(String subDir: subDirs){
-                    listDir.add(new File(fc.getSelectedFile() + "/" +subDir).getPath());
-                }                
+                    for(String subDir: subDirs){
+                        listDir.add(new File(fc.getSelectedFile() + "/" +subDir).getPath());
+                    }                
+                }
             }
+            else if(fc.getSelectedFiles().length > 1)
+            {
+                File[] folders = fc.getSelectedFiles();
+                for(File folder:folders){
+                    listDir.add(folder.getPath());
+                    last_dir=folder.getPath();
+                }
+            }
+            
         }
         }
         catch(UnsupportedEncodingException ex)
