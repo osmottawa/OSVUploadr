@@ -3,7 +3,7 @@
 An application that helps you upload photos from action cameras like gopro and garmin virb (for now) to OpenStreetView.
 
 ## How to use ##
-To start the application you need the java runtime environment(JRE) version 1.8+. To launch it you can double click the *.jar* file. If that doesn't work, running it via the command line via *java -jar [jar file path]/OSVUploadr.jar* will.
+To start the application you need the java runtime environment(JRE) version 1.8+. To launch it you can double click the *.jar* file. If that doesn't work, running it via the command line via `java -jar [jar file path]/OSVUploadr.jar` will.
 
 ![Mainscreen](https://cloud.githubusercontent.com/assets/498547/17795874/01a06620-658a-11e6-9b05-79c5236b1cee.PNG)
 
