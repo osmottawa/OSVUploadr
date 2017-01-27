@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import java.time.Duration;
 import ca.osmcanada.osvuploadr.Utils.*;
 import ca.osmcanada.osvuploadr.struct.ImageProperties;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class FolderCleaner {
                if (name.lastIndexOf('.') > 0) {
                     int lastIndex = name.lastIndexOf('.');
                     String str = name.substring(lastIndex);
-                    if (str.equals(".jpg")) {
+                    if (str.toLowerCase().equals(".jpg")) {
                         return true;
                     }
                 }
@@ -136,7 +137,8 @@ public class FolderCleaner {
                 Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Have to move:" + imp.getFilePath());
                 File newLoc = new File(_folder +"/"+duplicate_folder+"/"+f.getName());
                 try{
-                Files.move(f.toPath(), newLoc.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                //Files.move(f.toPath(), newLoc.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                Move(f.toPath(),newLoc.toPath());
                 }
                 catch(Exception ex){
                     Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, ex.toString(),ex);
@@ -144,6 +146,22 @@ public class FolderCleaner {
             }         
         }
         
+    }
+    private void Move(Path from, Path to)
+    {
+        try{
+
+    	   File afile =new File(from.toUri());
+
+    	   if(afile.renameTo(new File(to.toUri()))){
+    		System.out.println("File is moved successful!");
+    	   }else{
+    		System.out.println("File is failed to move!");
+    	   }
+
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
     }
     
     public void RemoveDuplicates(){

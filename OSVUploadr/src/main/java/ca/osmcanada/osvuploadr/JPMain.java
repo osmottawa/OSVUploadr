@@ -1013,7 +1013,7 @@ public class JPMain extends javax.swing.JPanel {
     private void jbRemoveDupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRemoveDupActionPerformed
         JFMain topframe = (JFMain)SwingUtilities.getWindowAncestor(this);
         topframe.ShowInfoBox();
-        topframe.SetInfoBoxText("test");
+        topframe.SetInfoBoxText("Sorting items, please wait");
         for(String item:listDir.getItems()){
             Thread t = new Thread(){
                 public void run(){
