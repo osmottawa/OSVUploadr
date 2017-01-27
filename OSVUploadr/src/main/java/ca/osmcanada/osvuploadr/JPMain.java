@@ -893,7 +893,7 @@ public class JPMain extends javax.swing.JPanel {
                     });
                 
                     for(String subDir: subDirs){
-                        listDir.add(new File(fc.getSelectedFile() + "/" +subDir).getPath());
+                        listDir.add(new File(fc.getSelectedFile() + File.separator + subDir).getPath());
                     }                
                 }
             }

@@ -135,7 +135,7 @@ public class FolderCleaner {
             {
                 //File is a duplicate, move to duplicate folder
                 Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Have to move:" + imp.getFilePath());
-                File newLoc = new File(_folder +"/"+duplicate_folder+"/"+f.getName());
+                File newLoc = new File(_folder + File.separator +duplicate_folder+ File.separator +f.getName());
                 try{
                 //Files.move(f.toPath(), newLoc.toPath(),StandardCopyOption.REPLACE_EXISTING);
                 Move(f.toPath(),newLoc.toPath());
@@ -165,7 +165,7 @@ public class FolderCleaner {
     }
     
     public void RemoveDuplicates(){
-        File dup = new File(_folder + "/" + duplicate_folder);
+        File dup = new File(_folder + File.separator + duplicate_folder);
         if(!dup.exists())
         {
             try{

@@ -5,7 +5,12 @@
  */
 package ca.osmcanada.osvuploadr;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -33,10 +38,18 @@ public class UploadThreadTest {
     
     @Before
     public void setUp() {
+        if(Files.exists(Paths.get("tests"+ File.separator + "test2"))){
+            File f = new File("tests"+ File.separator + "test2" + File.separator + "count_file.txt");
+            f.delete();
+        }
     }
     
     @After
     public void tearDown() {
+        if(Files.exists(Paths.get("tests"+ File.separator + "test2"))){
+            File f = new File("tests"+ File.separator + "test2" + File.separator + "count_file.txt");
+            f.delete();
+        }
     }
 
     /**
@@ -162,6 +175,43 @@ public class UploadThreadTest {
     @Test
     public void testRun() {
         //Place holder test
+    }
+
+    /**
+     * Test of incrementCount method, of class UploadThread.
+     */
+    @Test
+    public void testIncrementCount() {
+        System.out.println("incrementCount");
+        UploadThread instance = new UploadThread();
+        instance.setDirectory("tests" + File.separator + "test2");
+        for(int i=1;i<=10;i++){
+            instance.incrementCount(i);
+        }
+        if(!Files.exists(Paths.get("tests" + File.separator + "test2"+ File.separator + "count_file.txt"))){
+            assertTrue("Count file was not created", true);
+        }
+        
+        try{
+            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream("tests" + File.separator + "test2"+ File.separator + "count_file.txt"),"UTF-8"));
+            
+            String line;
+            for(int i=1;i<=10;i++){                 
+                line = br.readLine();
+                line=line.trim();
+                
+                if(Integer.parseInt(line)!=i){
+                    assertTrue("Line number: " + String.valueOf(i) +" does not match count: " + line,true);
+                }
+                   
+            }
+            br.close();
+            
+        }
+        catch(Exception e){
+                assertTrue("Exception occured.", true);
+        }
+
     }
     
 }

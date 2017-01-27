@@ -8,8 +8,11 @@ package ca.osmcanada.osvuploadr;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.InputStreamReader;
+import java.io.Writer;
+import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.logging.Level;
@@ -33,7 +36,10 @@ public class UploadThread extends Thread{
     final static byte eighth =(byte)0x1; // 00000001
     
     
-    
+    /**
+     * Sets directory that the thread needs to work from. This should be set before running the thread.
+     * @param Directory Directory from which to work from
+     */
     public void setDirectory(String Directory){
         _dir=Directory;
         File dir_photos = new File(_dir);
@@ -57,7 +63,7 @@ public class UploadThread extends Thread{
         UploadStatus = new byte[pages];
         
         if(Files.exists(Paths.get(Directory + File.separator + "count_file.txt"))){
-            UploadProgress(Directory);
+            UploadProgress(_dir);
         }
     }
     
@@ -66,10 +72,20 @@ public class UploadThread extends Thread{
         UploadStatus = new byte[size]; 
     }
     
+    /**
+     * Sets whether the photo has been uploaded or not
+     * @param Uploaded Sets the status to uploaded or not. True: Uploaded, False: Not uploaded
+     * @param PhotoNumber Non-zero based sequence number of the photo
+     */
     public void setUploaded(boolean Uploaded,int PhotoNumber){
         setValue(PhotoNumber,Uploaded);
     }
     
+    /**
+     * Gets the upload status from the non-zero based sequence number
+     * @param PhotoNumber Non-zero based sequence number
+     * @return boolean stating if it was uploaded or not
+     */
     public boolean getUploaded(int PhotoNumber){
         int idx = PhotoNumber / 8;
         int rest = PhotoNumber % 8;
@@ -99,6 +115,11 @@ public class UploadThread extends Thread{
         return false;        
     }
     
+    /**
+     * Helper method to switch bit on or off in the byte array
+     * @param pos Non-zero sequence number of the bit we want to change
+     * @param Uploaded boolean value that turns on or off the bit. True: 1 False: 0
+     */
     private void setValue(int pos,boolean Uploaded){
         int idx = pos / 8;
         int rest = pos % 8;
@@ -191,6 +212,10 @@ public class UploadThread extends Thread{
         }
     }
     
+    /** 
+     * Sets the upload progress for previously interrupted upload by consulting count file
+     * @param Dir Directory from which it needs to read from
+     */
     private void UploadProgress(String Dir){
         if(!Files.exists(Paths.get(Dir + File.separator + "count_file.txt"))){
             return;
@@ -216,6 +241,34 @@ public class UploadThread extends Thread{
         }
         
     }
+    
+    /** 
+     * Writes to count file a photo number that has been uploaded.
+     * 
+     * @param PhotoNumber non-zero number of the photo in the sequence 
+     */
+    public synchronized void incrementCount(int PhotoNumber){
+        File f_cnt = new File(_dir+ File.separator + "count_file.txt");
+        try{
+            if(!Files.exists(Paths.get(f_cnt.getAbsolutePath()))){
+                f_cnt.createNewFile();
+            }
+            Writer w = Channels.newWriter(new FileOutputStream(f_cnt.getAbsoluteFile(), true).getChannel(), "UTF-8");
+            w.append(String.valueOf(PhotoNumber)+"\n");
+            w.flush();
+            w.close();
+        }
+        catch(Exception e){
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, e.getMessage());
+        }
+    }
+    
+    /**
+     * Checks if a string is an Integer or not
+     * @param s String that you want to determine if it's an integer or not
+     * @param radix what base the string is written in, for decimal: 10, for binary: 2, for hex: 16, etc
+     * @return boolean whether it's an integer or not
+     */
     private static boolean isInteger(String s, int radix) {
     if(s.isEmpty()) return false;
     for(int i = 0; i < s.length(); i++) {
