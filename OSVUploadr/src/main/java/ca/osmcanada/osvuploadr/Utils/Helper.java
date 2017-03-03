@@ -260,4 +260,26 @@ public final class Helper {
         }
         return null;
     }
+    
+    public static Double calc_bearing(Double start_latitude, Double start_longitude, Double end_latitude, Double end_longitude){
+       
+        //haversine formula to calculate bearing
+        //Convert coordinates to radians
+        start_latitude = Math.toRadians(start_latitude);
+        start_latitude = Math.toRadians(start_longitude);
+        end_latitude = Math.toRadians(end_latitude);
+        end_longitude = Math.toRadians(end_longitude);
+        
+        Double dLongitude = end_longitude - start_longitude;        
+        Double dPhi = Math.log(Math.tan(end_latitude/2.0 + Math.PI/4.0 ) / Math.tan(start_latitude / 2.0 + Math.PI /4.0));
+    
+        if(Math.abs(dLongitude) > Math.PI){
+            if(dLongitude > 0.0)
+                dLongitude = -(Math.PI * 2.0  - dLongitude);
+            else
+                dLongitude = (Math.PI * 2.0 + dLongitude);
+        }
+        
+        return Math.toDegrees( Math.atan2(Math.sin(dLongitude)*Math.cos(end_latitude), Math.cos(start_latitude)*Math.sin(end_latitude) - Math.sin(start_latitude)*Math.cos(end_latitude)*Math.cos(dLongitude)));
+    }
 }
