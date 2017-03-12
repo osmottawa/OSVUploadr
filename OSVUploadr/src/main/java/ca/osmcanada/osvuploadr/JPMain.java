@@ -89,7 +89,10 @@ public class JPMain extends javax.swing.JPanel {
         try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         }
-        catch(Exception ex){}
+        catch(Exception ex)
+        {
+            JOptionPane.showMessageDialog(null, "Was unable to set the native look and feel", "Info", JOptionPane.WARNING_MESSAGE);
+        }        
         initComponents();
         try{
         r=ResourceBundle.getBundle("Bundle",l);
@@ -98,25 +101,20 @@ public class JPMain extends javax.swing.JPanel {
             System.out.println(ex.toString());
         }
         
-        SetUILang();
+        setUILang();
         
     }
     
-    private void SetUILang(){
-        try{
-            jlDirectories.setText(new String(r.getString("Directories").getBytes(),"UTF-8"));
-            jbAdd.setText(new String(r.getString("Add_Folder").getBytes(),"UTF-8"));
-            jbRemove.setText(new String(r.getString("Remove_Folder").getBytes(),"UTF-8"));
-            jbRemoveDup.setText(new String(r.getString("Remove_Duplicates").getBytes(),"UTF-8"));
-            jbUpload.setText(new String(r.getString("Upload").getBytes(),"UTF-8"));
-            jbExit.setText(new String(r.getString("Exit").getBytes(),"UTF-8"));
-        }
-        catch(Exception ex){
-            
-        }
+    private void setUILang(){
+            jlDirectories.setText(new String(r.getString("Directories").getBytes(), StandardCharsets.UTF_8));
+            jbAdd.setText(new String(r.getString("Add_Folder").getBytes(), StandardCharsets.UTF_8));
+            jbRemove.setText(new String(r.getString("Remove_Folder").getBytes(), StandardCharsets.UTF_8));
+            jbRemoveDup.setText(new String(r.getString("Remove_Duplicates").getBytes(), StandardCharsets.UTF_8));
+            jbUpload.setText(new String(r.getString("Upload").getBytes(), StandardCharsets.UTF_8));
+            jbExit.setText(new String(r.getString("Exit").getBytes(), StandardCharsets.UTF_8));        
     }
     
-    public String GetOSMUser(String usr, String psw)throws IOException{
+    public String getOSMUser(String usr, String psw)throws IOException{
         final OAuth10aService service = new ServiceBuilder()
                            .apiKey(API_KEY)
                            .apiSecret(API_SECRET)
@@ -650,8 +648,9 @@ public class JPMain extends javax.swing.JPanel {
                     need_seq=false;
                 }
             }
-            catch(Exception ex)
+            catch(IOException | NumberFormatException ex)
             {
+                System.out.println("Failed to read sequence file, requesting new sequence id" + ex.getMessage());
                 need_seq=true;
             }            
         }
@@ -966,7 +965,7 @@ public class JPMain extends javax.swing.JPanel {
                         else{
                             return;
                         }
-                        token = GetOSMUser(usr,psw);                     
+                        token = getOSMUser(usr,psw);                     
                         break;
                     case 1:
                         token = getOSMUser();
