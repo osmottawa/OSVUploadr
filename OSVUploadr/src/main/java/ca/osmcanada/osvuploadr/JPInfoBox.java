@@ -5,6 +5,7 @@
  */
 package ca.osmcanada.osvuploadr;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import javax.swing.UIManager;
@@ -19,6 +20,7 @@ public class JPInfoBox extends javax.swing.JPanel {
     private ResourceBundle r;
     /**
      * Creates new form JPInfoBox
+     * @param locale
      */
     public JPInfoBox(Locale locale) {
         l=locale;
@@ -28,17 +30,17 @@ public class JPInfoBox extends javax.swing.JPanel {
         catch(Exception ex){}
         initComponents();
         r=ResourceBundle.getBundle("Bundle",l);
-        SetUILang();
+        setUILang();
     }
 
-    private void SetUILang(){
+    private void setUILang(){
         try{
-            jlCurrentlyProc.setText(new String(r.getString("currently_processing").getBytes(),"UTF-8"));
+            jlCurrentlyProc.setText(new String(r.getString("currently_processing").getBytes(), StandardCharsets.UTF_8));
         }
         catch(Exception ex)
         {}
     }
-    public void SetProcessingText(String str){
+    public void setProcessingText(String str){
         jlProcessing.setText(str);
     }
     /**

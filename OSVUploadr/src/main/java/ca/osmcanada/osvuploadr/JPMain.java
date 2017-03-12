@@ -139,13 +139,13 @@ public class JPMain extends javax.swing.JPanel {
             System.out.println("Sending username and password");
             
             int start_indx = page.indexOf("value=\"",page.indexOf("name=\"authenticity_token\""))+7;
-            int end_indx = page.indexOf("\"",start_indx);                     
+            int end_indx = page.indexOf('\"',start_indx);                     
             
             String utf8 = "✓";            
             String authenticity_token = page.substring(start_indx,end_indx);
             
             start_indx = page.indexOf("value=\"",page.indexOf("name=\"referer\""))+7;
-            end_indx = page.indexOf("\"",start_indx);
+            end_indx = page.indexOf('\"',start_indx);
             String referer = page.substring(start_indx,end_indx);
             
             Map<String,String> arguments = new HashMap<>();
@@ -166,27 +166,27 @@ public class JPMain extends javax.swing.JPanel {
             System.out.println("Processing Granting Access page");
             start_indx = page.indexOf("<form");//Find form tag
             start_indx = page.indexOf("action=\"", start_indx)+8; //get action url
-            end_indx = page.indexOf("\"",start_indx); //get closing tag
+            end_indx = page.indexOf('\"',start_indx); //get closing tag
             String action_url = page.substring(start_indx, end_indx);
             if(action_url.startsWith("/")){
                 action_url=BASE_URL+ action_url.substring(1, action_url.length());
             }
-            else if(!action_url.toLowerCase().startsWith("http")){
+            else if(!action_url.toLowerCase(Locale.ENGLISH).startsWith("http")){
                 //Need to post same level as current url
-                end_indx=url.lastIndexOf("/")+1;
+                end_indx=url.lastIndexOf('/')+1;
                 action_url=url.substring(0, end_indx)+action_url;
             }
             
             start_indx = page.indexOf("name=\"authenticity_token\"");
-            start_indx = FindOpening(page,start_indx,"<");
+            start_indx = findOpening(page,start_indx,"<");
             start_indx = page.indexOf("value=\"",start_indx)+7;
-            end_indx = page.indexOf("\"",start_indx);
+            end_indx = page.indexOf('\"',start_indx);
             authenticity_token = page.substring(start_indx,end_indx);
             
             start_indx = page.indexOf("name=\"oauth_token\"");
-            start_indx = FindOpening(page,start_indx,"<");
+            start_indx = findOpening(page,start_indx,"<");
             start_indx = page.indexOf("value=\"",start_indx)+7;
-            end_indx = page.indexOf("\"",start_indx);
+            end_indx = page.indexOf('\"',start_indx);
             String oauth_token=page.substring(start_indx, end_indx);
                       
             arguments.clear();
@@ -227,7 +227,7 @@ public class JPMain extends javax.swing.JPanel {
         return "";
     }
     
-    public String GetOSMUser() throws IOException{
+    public String getOSMUser() throws IOException{
         final OAuth10aService service = new ServiceBuilder()
                            .apiKey(API_KEY)
                            .apiSecret(API_SECRET)
@@ -237,7 +237,7 @@ public class JPMain extends javax.swing.JPanel {
         String url = service.getAuthorizationUrl(requestToken);
         Helper.openBrowser(java.net.URI.create(url));
         //java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
-        String pin_code = JOptionPane.showInputDialog(null, new String(r.getString("auth_window_opened").getBytes(),"UTF-8"), new String(r.getString("auth_required").getBytes(),"UTF-8"), JOptionPane.INFORMATION_MESSAGE);
+        String pin_code = JOptionPane.showInputDialog(null, new String(r.getString("auth_window_opened").getBytes(),StandardCharsets.UTF_8), new String(r.getString("auth_required").getBytes(),StandardCharsets.UTF_8), JOptionPane.INFORMATION_MESSAGE);
         final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, pin_code);
         //final OAuthRequest request = new OAuthRequest(Verb.GET, BASE_URL + "api/0.6/user/details", service);
         //service.signRequest(accessToken, request);
@@ -254,9 +254,9 @@ public class JPMain extends javax.swing.JPanel {
         return accessToken.getToken()+"|"+accessToken.getTokenSecret();
     }
     
-    private int FindOpening(String str,int current_index,String OpeningChar){
+    private int findOpening(String str,int current_index,String OpeningChar){
         for(int i=current_index;i>=0;i--){
-            if(str.substring(i,i+1).equals("<")){
+            if(str.substring(i,i+1).equals(OpeningChar)){
                     return i;
                 }
         }
@@ -271,18 +271,18 @@ public class JPMain extends javax.swing.JPanel {
             con.setRequestMethod(method); // PUT is another valid option
             con.setDoOutput(true);
             con.setInstanceFollowRedirects(false);
-            String cookiestr="";
+            StringBuffer cookiestr = new StringBuffer();
             if(cookielist!=null){
                 if(cookielist.size()>0){
                     for(Cookie cookie:cookielist){
-                        if(!cookiestr.equals("")){
-                            cookiestr+=";" + cookie.getName() +"=" +cookie.getValue();
+                        if(cookiestr.length()!=0){
+                            cookiestr.append(";" + cookie.getName() +"=" +cookie.getValue());
                         }
                         else{
-                            cookiestr+=cookie.getName() +"=" +cookie.getValue();
+                            cookiestr.append(cookie.getName() +"=" +cookie.getValue());
                         }
                     }
-                    con.setRequestProperty("Cookie", cookiestr);
+                    con.setRequestProperty("Cookie", cookiestr.toString());
                 }
             }
             
@@ -290,7 +290,7 @@ public class JPMain extends javax.swing.JPanel {
             
             StringJoiner sj = new StringJoiner("&");
             for(Map.Entry<String,String> entry : arguments.entrySet())
-                sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
+                sj.add(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8.toString()) + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8.toString()));
             byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
             int length = out.length;
             
@@ -317,7 +317,7 @@ public class JPMain extends javax.swing.JPanel {
                 String newURL = con.getHeaderField("Location");
                 String cookies = con.getHeaderField("Set-Cookie");
                 if(cookies == null){
-                    cookies= cookiestr;
+                    cookies= cookiestr.toString();
                 }
                 con = (HttpURLConnection) new URL(newURL).openConnection();
                 con.setRequestProperty("Cookie", cookies);                
@@ -332,7 +332,8 @@ public class JPMain extends javax.swing.JPanel {
             while ((letti = is.read(buf)) > 0)
             baos.write(buf, 0, letti);
 
-            String data = new String(baos.toByteArray(),Charset.forName("UTF-8"));
+            String data;
+            data = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             con.disconnect();
             
             return data;
@@ -368,7 +369,7 @@ public class JPMain extends javax.swing.JPanel {
         }
     }
     
-    private void SendAuthTokens(String accessToken, String accessSecret){
+    private void sendAuthTokens(String accessToken, String accessSecret){
         try
         {
             URL url = new URL(URL_ACCESS);
@@ -404,7 +405,8 @@ public class JPMain extends javax.swing.JPanel {
             while ((letti = is.read(buf)) > 0)
             baos.write(buf, 0, letti);
 
-            String data = new String(baos.toByteArray());
+            String data;
+            data = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             http.disconnect();
             
         }
@@ -412,7 +414,7 @@ public class JPMain extends javax.swing.JPanel {
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    private void SendFinished(long Sequence_id, String accessToken)
+    private void sendFinished(long Sequence_id, String accessToken)
     {
         try
         {
@@ -449,7 +451,8 @@ public class JPMain extends javax.swing.JPanel {
             while ((letti = is.read(buf)) > 0)
             baos.write(buf, 0, letti);
 
-            String data = new String(baos.toByteArray());
+            String data;
+            data = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             http.disconnect();
             
         }
@@ -498,9 +501,9 @@ public class JPMain extends javax.swing.JPanel {
             while ((letti = is.read(buf)) > 0)
             baos.write(buf, 0, letti);
 
-            String data = new String(baos.toByteArray());
+            String data = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             int start = data.indexOf("\"osv\":{\"sequence\":{\"id\":\"");
-            int end = data.indexOf("\"",start+25);
+            int end = data.indexOf('\"',start+25);
             System.out.println("Received request:" + data);
             String sequence_id= data.substring(start+25,end);
             System.out.println("Obtained Sequence ID: sequence_id");
@@ -516,7 +519,7 @@ public class JPMain extends javax.swing.JPanel {
     
     
     
-    private void Upload_Image(ImageProperties imp, String accessToken, long Sequence_id)
+    private void upload_Image(ImageProperties imp, String accessToken, long Sequence_id)
     {
         try{
             URL url = new URL(URL_PHOTO);
@@ -526,7 +529,7 @@ public class JPMain extends javax.swing.JPanel {
             http.setDoOutput(true);
             
             String boundary = UUID.randomUUID().toString();
-            byte[] boundaryBytes = boundaryBytes =  ("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8);
+            byte[] boundaryBytes = ("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8);
             byte[] finishBoundaryBytes = ("--" + boundary + "--").getBytes(StandardCharsets.UTF_8);
             http.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
             http.setRequestProperty("Accept", "*/*");
@@ -592,7 +595,8 @@ public class JPMain extends javax.swing.JPanel {
             while ((letti = is.read(buf)) > 0)
             baos.write(buf, 0, letti);
 
-            String data = new String(baos.toByteArray());
+            String data;
+            data = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             //TODO:Process returned JSON
             System.out.println(data);
             http.disconnect();
@@ -603,7 +607,7 @@ public class JPMain extends javax.swing.JPanel {
         }
     }
     
-    private void Process(String dir, String accessToken)
+    private void process(String dir, String accessToken)
     {
         File dir_photos = new File(dir);
         //filter only .jpgs
@@ -612,7 +616,7 @@ public class JPMain extends javax.swing.JPanel {
                if (name.lastIndexOf('.') > 0) {
                     int lastIndex = name.lastIndexOf('.');
                     String str = name.substring(lastIndex);
-                    if (str.toLowerCase().equals(".jpg")) {
+                    if (str.toLowerCase(Locale.ENGLISH).equals(".jpg")) {
                         return true;
                     }
                 }
@@ -680,7 +684,10 @@ public class JPMain extends javax.swing.JPanel {
         {
             try{
                 System.out.println("Creating new count file:" + f_cnt.getPath());
-                f_cnt.createNewFile();
+                boolean createNewFile = f_cnt.createNewFile();
+                if(!createNewFile){
+                    JOptionPane.showMessageDialog(null, "Could not create count file, please check write permissions: " + f_cnt.getAbsoluteFile(), "Error", JOptionPane.ERROR);
+                }
             }
             catch(Exception ex)
             {
@@ -724,7 +731,7 @@ public class JPMain extends javax.swing.JPanel {
                 imp.setSequenceNumber(cnt);
                 cnt++; //TODO: Write count to file
                 System.out.println("Uploading image:"+ f.getPath());
-                Upload_Image(imp,accessToken,sequence_id);
+                upload_Image(imp,accessToken,sequence_id);
                 System.out.println("Uploaded");
                 String out =String.valueOf(cnt);
                 Files.write(Paths.get(f_cnt.getPath()),out.getBytes("UTF-8"), StandardOpenOption.TRUNCATE_EXISTING);
@@ -737,7 +744,7 @@ public class JPMain extends javax.swing.JPanel {
              
         }
         System.out.println("Sending finish for sequence:"+ sequence_id);
-        SendFinished(sequence_id, accessToken);
+        sendFinished(sequence_id, accessToken);
     }
                 
     
@@ -866,7 +873,6 @@ public class JPMain extends javax.swing.JPanel {
     }//GEN-LAST:event_jbExitActionPerformed
 
     private void jbAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbAddActionPerformed
-        try{
         JFileChooser fc = new JFileChooser();
         if(!last_dir.isEmpty()){
             fc.setCurrentDirectory(new java.io.File(last_dir)); // start at application current directory
@@ -876,7 +882,7 @@ public class JPMain extends javax.swing.JPanel {
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
             if(fc.getSelectedFiles().length==1){
-                int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(),"UTF-8"), new String(r.getString("add_subfolders").getBytes(),"UTF-8"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(), StandardCharsets.UTF_8), new String(r.getString("add_subfolders").getBytes(), StandardCharsets.UTF_8), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                 if(response == JOptionPane.NO_OPTION){
                     File folder = fc.getSelectedFile();
                     listDir.add(folder.getPath());
@@ -904,12 +910,8 @@ public class JPMain extends javax.swing.JPanel {
                     listDir.add(folder.getPath());
                     last_dir=folder.getPath();
                 }
-            }
-            
+            }            
         }
-        }
-        catch(UnsupportedEncodingException ex)
-        {}
     }//GEN-LAST:event_jbAddActionPerformed
 
     private void jbRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRemoveActionPerformed
@@ -939,8 +941,8 @@ public class JPMain extends javax.swing.JPanel {
         if(!id.exists())
         {
             try{
-                String[] buttons={new String(r.getString("automatically").getBytes(),"UTF-8"),new String(r.getString("manually").getBytes(),"UTF-8"),new String(r.getString("cancel").getBytes(),"UTF-8")};
-                int rc = JOptionPane.showOptionDialog(null,new String(r.getString("login_to_osm").getBytes(),"UTF-8"),new String(r.getString("confirmation").getBytes(),"UTF-8"),JOptionPane.INFORMATION_MESSAGE,0,null,buttons,buttons[0]);
+                String[] buttons={new String(r.getString("automatically").getBytes(), StandardCharsets.UTF_8),new String(r.getString("manually").getBytes(), StandardCharsets.UTF_8),new String(r.getString("cancel").getBytes(), StandardCharsets.UTF_8)};
+                int rc = JOptionPane.showOptionDialog(null,new String(r.getString("login_to_osm").getBytes(), StandardCharsets.UTF_8),new String(r.getString("confirmation").getBytes(), StandardCharsets.UTF_8),JOptionPane.INFORMATION_MESSAGE,0,null,buttons,buttons[0]);
                 String token="";
                 System.out.println("GetOSMUser");
                 switch(rc){
@@ -967,7 +969,7 @@ public class JPMain extends javax.swing.JPanel {
                         token = GetOSMUser(usr,psw);                     
                         break;
                     case 1:
-                        token = GetOSMUser();
+                        token = getOSMUser();
                         break;
                     case 2:
                         return;
@@ -978,7 +980,7 @@ public class JPMain extends javax.swing.JPanel {
                 Files.write(targetPath, bytes, StandardOpenOption.CREATE); 
                 accessToken = token.split("\\|")[0];
                 String accessSecret = token.split("\\|")[1];
-                SendAuthTokens(accessToken,accessSecret);                
+                sendAuthTokens(accessToken,accessSecret);                
             }
             catch(Exception ex)
             {
@@ -1003,7 +1005,7 @@ public class JPMain extends javax.swing.JPanel {
         //Start processing list
         for(String item:listDir.getItems()){
             System.out.println("Processing folder:"+item);
-            Process(item,accessToken);
+            process(item,accessToken);
         }
         //um = new UploadManager(listDir.getItems());
         //um.start();
@@ -1012,15 +1014,15 @@ public class JPMain extends javax.swing.JPanel {
 
     private void jbRemoveDupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRemoveDupActionPerformed
         JFMain topframe = (JFMain)SwingUtilities.getWindowAncestor(this);
-        topframe.ShowInfoBox();
-        topframe.SetInfoBoxText("Sorting items, please wait");
+        topframe.showInfoBox();
+        topframe.setInfoBoxText("Sorting items, please wait");
         for(String item:listDir.getItems()){
             Thread t = new Thread(){
                 public void run(){
                     FolderCleaner fc = new FolderCleaner(item);
                     fc.setLocale(l);
                     fc.setInfoBox(topframe);
-                    fc.RemoveDuplicates();  
+                    fc.removeDuplicates();  
                 }
             };
             t.start();

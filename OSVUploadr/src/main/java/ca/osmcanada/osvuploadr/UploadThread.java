@@ -15,6 +15,7 @@ import java.io.Writer;
 import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,7 +25,7 @@ import java.util.logging.Logger;
  */
 public class UploadThread extends Thread{
     String _dir;
-    byte[] UploadStatus;
+    byte[] uploadStatus;
     //Store upload status of dir
     final static byte first = (byte)-0x80; // 10000000
     final static byte second =(byte)0x40; // 01000000
@@ -49,7 +50,7 @@ public class UploadThread extends Thread{
                if (name.lastIndexOf('.') > 0) {
                     int lastIndex = name.lastIndexOf('.');
                     String str = name.substring(lastIndex);
-                    if (str.toLowerCase().equals(".jpg")) {
+                    if (str.toLowerCase(Locale.ENGLISH).equals(".jpg")) {
                         return true;
                     }
                 }
@@ -59,8 +60,8 @@ public class UploadThread extends Thread{
         int nbfiles = dir_photos.listFiles(fileNameFilter).length;
         int pages = nbfiles / 8;
         int rest = nbfiles % 8;
-        if(nbfiles>0){pages++;} //increase if there are leftovers
-        UploadStatus = new byte[pages];
+        if(rest>0){pages++;} //increase if there are leftovers
+        uploadStatus = new byte[pages];
         
         if(Files.exists(Paths.get(Directory + File.separator + "count_file.txt"))){
             UploadProgress(_dir);
@@ -69,7 +70,7 @@ public class UploadThread extends Thread{
     
     //for testing
     public void initUpload(int size){
-        UploadStatus = new byte[size]; 
+        uploadStatus = new byte[size]; 
     }
     
     /**
@@ -96,21 +97,21 @@ public class UploadThread extends Thread{
         //Test if bit is set or not
         switch(rest){
             case 0:
-                return ((UploadStatus[idx] & eighth) == eighth);
+                return ((uploadStatus[idx] & eighth) == eighth);
             case 1:
-                return ((UploadStatus[idx] & first) == first);
+                return ((uploadStatus[idx] & first) == first);
             case 2:
-                return ((UploadStatus[idx] & second) == second);
+                return ((uploadStatus[idx] & second) == second);
             case 3:
-                return ((UploadStatus[idx] & third) == third);
+                return ((uploadStatus[idx] & third) == third);
             case 4:
-                return ((UploadStatus[idx] & fourth) == fourth);
+                return ((uploadStatus[idx] & fourth) == fourth);
             case 5:
-                return ((UploadStatus[idx] & fifth) == fifth);
+                return ((uploadStatus[idx] & fifth) == fifth);
             case 6:
-                return ((UploadStatus[idx] & sixth) == sixth);
+                return ((uploadStatus[idx] & sixth) == sixth);
             case 7:
-                return ((UploadStatus[idx] & seventh) == seventh);
+                return ((uploadStatus[idx] & seventh) == seventh);
         }
         return false;        
     }
@@ -133,80 +134,80 @@ public class UploadThread extends Thread{
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|eighth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|eighth);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~eighth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~eighth);
                 }
                 break;
             case 1:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|first);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|first);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~first);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~first);
                 }
                 break;
             case 2:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|second);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|second);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~second);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~second);
                 }
                 break;
             case 3:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|third);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|third);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~third);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~third);
                 }
                 break;
             case 4:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|fourth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|fourth);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~fourth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~fourth);
                 }
                 break;
             case 5:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|fifth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|fifth);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~fifth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~fifth);
                 }
                 break;
             case 6:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|sixth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|sixth);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~sixth);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~sixth);
                 }
                 break;
             case 7:
                 if(Uploaded)
                 { 
 
-                    UploadStatus[idx]=(byte)(UploadStatus[idx]|seventh);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx]|seventh);
                 }
                 else{
-                    UploadStatus[idx]=(byte)(UploadStatus[idx] & ~seventh);
+                    uploadStatus[idx]=(byte)(uploadStatus[idx] & ~seventh);
                 }
                 break;
         }

@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import java.time.Duration;
 import ca.osmcanada.osvuploadr.Utils.*;
 import ca.osmcanada.osvuploadr.struct.ImageProperties;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
@@ -71,7 +72,7 @@ public class FolderCleaner {
                if (name.lastIndexOf('.') > 0) {
                     int lastIndex = name.lastIndexOf('.');
                     String str = name.substring(lastIndex);
-                    if (str.toLowerCase().equals(".jpg")) {
+                    if (str.toLowerCase(Locale.ENGLISH).equals(".jpg")) {
                         return true;
                     }
                 }
@@ -92,7 +93,7 @@ public class FolderCleaner {
         
         for(File f:file_list){
             if(info!=null){
-                info.SetInfoBoxText(f.getPath());
+                info.setInfoBoxText(f.getPath());
             }
             ImageProperties imp = Helper.getImageProperties(f);
             if(is_first){
@@ -138,7 +139,7 @@ public class FolderCleaner {
                 File newLoc = new File(_folder + File.separator +duplicate_folder+ File.separator +f.getName());
                 try{
                 //Files.move(f.toPath(), newLoc.toPath(),StandardCopyOption.REPLACE_EXISTING);
-                Move(f.toPath(),newLoc.toPath());
+                move(f.toPath(),newLoc.toPath());
                 }
                 catch(Exception ex){
                     Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, ex.toString(),ex);
@@ -147,7 +148,7 @@ public class FolderCleaner {
         }
         
     }
-    private void Move(Path from, Path to)
+    private void move(Path from, Path to)
     {
         try{
 
@@ -164,7 +165,7 @@ public class FolderCleaner {
     	}
     }
     
-    public void RemoveDuplicates(){
+    public void removeDuplicates(){
         File dup = new File(_folder + File.separator + duplicate_folder);
         if(!dup.exists())
         {
@@ -178,11 +179,7 @@ public class FolderCleaner {
         }
         do_science();
         if(info!=null){
-            try{
-                info.SetInfoBoxText(new String(r.getString("done").getBytes(),"UTF-8"));
-            }
-            catch(Exception ex)
-            {}
+            info.setInfoBoxText(new String(r.getString("done").getBytes(), StandardCharsets.UTF_8));           
         }
     }
     

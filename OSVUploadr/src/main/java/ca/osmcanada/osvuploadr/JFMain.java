@@ -24,18 +24,18 @@ public class JFMain extends javax.swing.JFrame {
         this.setTitle("OSVUploadr");
     }
     
-    public void ShowInfoBox(){
+    public void showInfoBox(){
         jib.setVisible(true);
         this.setSize(640,470);
         this.pack();
     }
-    public void HideInfoBox(){
+    public void hideInfoBox(){
         jib.setVisible(false);
         this.setSize(640,320);
     }
     
-    public void SetInfoBoxText(String str){
-        jib.SetProcessingText(str);
+    public void setInfoBoxText(String str){
+        jib.setProcessingText(str);
     }
     /**
      * This method is called from within the constructor to initialize the form.
