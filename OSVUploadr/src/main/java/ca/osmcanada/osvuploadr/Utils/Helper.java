@@ -246,8 +246,8 @@ public final class Helper {
 		result.append(line);
 	}
         //Setting cookies
-        pc.SetCookies(response.getFirstHeader("Set-Cookie") == null ? "" :response.getFirstHeader("Set-Cookie").toString());
-        pc.SetPage(result.toString());
+        pc.setCookies(response.getFirstHeader("Set-Cookie") == null ? "" :response.getFirstHeader("Set-Cookie").toString());
+        pc.setPage(result.toString());
 
         return pc;
     }
@@ -266,12 +266,11 @@ public final class Helper {
         //haversine formula to calculate bearing
         //Convert coordinates to radians
         start_latitude = Math.toRadians(start_latitude);
-        start_latitude = Math.toRadians(start_longitude);
+        start_longitude = Math.toRadians(start_longitude);
         end_latitude = Math.toRadians(end_latitude);
         end_longitude = Math.toRadians(end_longitude);
         
-        Double dLongitude = end_longitude - start_longitude;        
-        Double dPhi = Math.log(Math.tan(end_latitude/2.0 + Math.PI/4.0 ) / Math.tan(start_latitude / 2.0 + Math.PI /4.0));
+        Double dLongitude = end_longitude - start_longitude;                
     
         if(Math.abs(dLongitude) > Math.PI){
             if(dLongitude > 0.0)

@@ -13,16 +13,16 @@ public class PageContent {
     String _page;
     String _cookies;
     
-    public void SetPage(String Page){
+    public void setPage(String Page){
         _page = Page;
     }
-    public void SetCookies(String Cookies){
+    public void setCookies(String Cookies){
         _cookies = Cookies;
     }
-    public String GetPage(){
+    public String getPage(){
         return _page;
     }
-    public String GetCookies(){
+    public String getCookies(){
         return _cookies;
     }
 }

@@ -134,7 +134,7 @@ public class JPMain extends javax.swing.JPanel {
             
             List<Cookie> cookies = httpCookieStore.getCookies();
             System.out.println("Getting OSM Login page");
-            String page = pc.GetPage();
+            String page = pc.getPage();
             
             System.out.println("Sending username and password");
             

@@ -8,6 +8,7 @@ package ca.osmcanada.osvuploadr;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -38,17 +39,28 @@ public class UploadThreadTest {
     
     @Before
     public void setUp() {
-        if(Files.exists(Paths.get("tests"+ File.separator + "test2"))){
+        if(!Files.exists(Paths.get("tests" + File.separator + "test2"))){
+            try{
+                Files.createDirectories(Paths.get("tests" + File.separator + "test2"));
+            }
+            catch(IOException ex)
+            {
+                assertTrue("test2 folder could not be created, check write permissions\n" + ex.getMessage(),true);
+            }
+        }
+        if(Files.exists(Paths.get("tests"+ File.separator + "test2")) && Files.exists(Paths.get("tests"+ File.separator + "test2" + File.separator + "count_file.txt"))){
             File f = new File("tests"+ File.separator + "test2" + File.separator + "count_file.txt");
-            f.delete();
+            boolean deleted = f.delete();
+            assertTrue("Clean up failed, could not delete count_file.txt",deleted);
         }
     }
     
     @After
     public void tearDown() {
-        if(Files.exists(Paths.get("tests"+ File.separator + "test2"))){
+        if(Files.exists(Paths.get("tests"+ File.separator + "test2")) && Files.exists(Paths.get("tests"+ File.separator + "test2" + File.separator + "count_file.txt"))){
             File f = new File("tests"+ File.separator + "test2" + File.separator + "count_file.txt");
-            f.delete();
+            boolean deleted = f.delete();
+            assertTrue("Clean up failed, could not delete count_file.txt",deleted);
         }
     }
 
@@ -139,8 +151,9 @@ public class UploadThreadTest {
         }
         ArrayList test = new ArrayList();
         //Generate 200 test samples to test
-        for(int i=1;i<200;i++){
-            int num = 1+(int)(Math.random()*((1024-1)+1));
+        java.util.Random r = new java.util.Random();
+        for(int i=1;i<200;i++){            
+            int num = r.nextInt(1024-1)+1;
             test.add(num);
             instance.setUploaded(false, num);
         }        
@@ -181,35 +194,40 @@ public class UploadThreadTest {
      * Test of incrementCount method, of class UploadThread.
      */
     @Test
-    public void testIncrementCount() {
+    public void testIncrementCount() throws java.io.IOException {
         System.out.println("incrementCount");
         UploadThread instance = new UploadThread();
+        
         instance.setDirectory("tests" + File.separator + "test2");
         for(int i=1;i<=10;i++){
             instance.incrementCount(i);
         }
         if(!Files.exists(Paths.get("tests" + File.separator + "test2"+ File.separator + "count_file.txt"))){
-            assertTrue("Count file was not created", true);
+            assertTrue("Count file was not created", false);
         }
-        
-        try{
-            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream("tests" + File.separator + "test2"+ File.separator + "count_file.txt"),"UTF-8"));
-            
+        BufferedReader br=null;
+        try{     
+            br = new BufferedReader(new InputStreamReader(new FileInputStream("tests" + File.separator + "test2"+ File.separator + "count_file.txt"),"UTF-8"));
             String line;
             for(int i=1;i<=10;i++){                 
                 line = br.readLine();
-                line=line.trim();
+                if(line!=null){
+                    line=line.trim();
                 
-                if(Integer.parseInt(line)!=i){
-                    assertTrue("Line number: " + String.valueOf(i) +" does not match count: " + line,true);
+                    if(Integer.parseInt(line)!=i){
+                        assertTrue("Line number: " + String.valueOf(i) +" does not match count: " + line,false);
+                    }
                 }
-                   
-            }
-            br.close();
-            
+                assertTrue("Read a null line from what should have had a number", line!=null);
+            }          
         }
-        catch(Exception e){
-                assertTrue("Exception occured.", true);
+        catch(IOException e){
+            assertTrue("Exception occured." + e.getMessage(), false);
+        }
+        finally{
+            if(br!=null){
+                br.close();
+            }
         }
 
     }
