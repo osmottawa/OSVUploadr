@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Locale;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -64,8 +65,14 @@ public final class Helper {
             Date date  = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
             return date.getTime();
         }
-        catch(Exception ex)
-        {}
+        catch(com.drew.imaging.ImageProcessingException ex)
+        {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error processing image properties(exif data)" + f.getAbsolutePath(), ex);
+        }
+        catch(IOException ex)
+        {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error while reading image: " + f.getAbsolutePath(), ex);
+        }
         return 0;
     }
     
@@ -87,7 +94,9 @@ public final class Helper {
                     imp.setCompass(directory.getDouble(directory.TAG_IMG_DIRECTION));
                 }
                 catch(Exception ex)
-                {}
+                {
+                    Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error getting image direction from:" + f.getPath(), ex);
+                }
             }
             if(directory.hasTagName(directory.TAG_TRACK) && imp.getCompass()==-1.0)
             {
@@ -96,18 +105,24 @@ public final class Helper {
                     imp.setCompass(directory.getDouble(directory.TAG_TRACK));
                 }
                 catch(Exception ex)
-                {}
+                {
+                    Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error getting image track from:" + f.getPath(), ex);
+                }
             }
 
             return imp;
-        }catch(Exception ex)
+        }catch(com.drew.imaging.ImageProcessingException ex)
         {
-            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error processing image properties(exif data) "+ f.getPath(), ex);
+        }
+        catch(IOException ex)
+        {
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error while reading image "+ f.getPath(), ex);
         }
         return null;
     }
     
-    public static Boolean OpenBrowser(URI uri){
+    public static Boolean openBrowser(URI uri){
         try{
             boolean supportsBrowse = true;
             if(!Desktop.isDesktopSupported()){
@@ -192,7 +207,7 @@ public final class Helper {
     
     public static EnumOS getOs() {
 
-        String s = System.getProperty("os.name").toLowerCase();
+        String s = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
 
         if (s.contains("win")) {
             return EnumOS.windows;
@@ -224,7 +239,7 @@ public final class Helper {
         System.out.println(msg);
     }
     
-    public static PageContent GetPageContent(String url, HttpClient client) throws Exception{
+    public static PageContent getPageContent(String url, HttpClient client) throws Exception{
         PageContent pc = new PageContent();
       
         HttpGet request = new HttpGet(url);
@@ -237,30 +252,37 @@ public final class Helper {
 	int responseCode = response.getStatusLine().getStatusCode();
         System.out.println("\nSending 'GET' request to URL : " + url);
 	System.out.println("Response Code : " + responseCode);
+                
+        BufferedReader rd=null;
+        StringBuffer result=null;
+        try{
+            rd = new BufferedReader( new InputStreamReader(response.getEntity().getContent(),response.getEntity().getContentEncoding().getValue()));
 
-	BufferedReader rd = new BufferedReader( new InputStreamReader(response.getEntity().getContent()));
+            result = new StringBuffer();
+            String line = "";
+            while ((line = rd.readLine()) != null) {
+                result.append(line);
+            }
+        }
+        catch(IOException ex){
+            System.out.println("Error occurred while trying to read HTTP response for Page Content");
+            System.out.println(ex.getMessage());
+        }
+        finally{
+            if(rd!=null){
+                rd.close();
+            }
+        }
+        if(result!=null){
+            //Setting cookies
+            pc.setCookies(response.getFirstHeader("Set-Cookie") == null ? "" :response.getFirstHeader("Set-Cookie").toString());
+            pc.setPage(result.toString());
 
-	StringBuffer result = new StringBuffer();
-	String line = "";
-	while ((line = rd.readLine()) != null) {
-		result.append(line);
-	}
-        //Setting cookies
-        pc.setCookies(response.getFirstHeader("Set-Cookie") == null ? "" :response.getFirstHeader("Set-Cookie").toString());
-        pc.setPage(result.toString());
-
-        return pc;
-    }
-    
-    public static List<NameValuePair> getFormParams(String html,List<String> FieldList)
-    {
-        List<NameValuePair> fields = new ArrayList<NameValuePair>();
-        for(String field:FieldList){
-            //TODO: Get fields from HTML
+            return pc;
         }
         return null;
     }
-    
+      
     public static Double calc_bearing(Double start_latitude, Double start_longitude, Double end_latitude, Double end_longitude){
        
         //haversine formula to calculate bearing

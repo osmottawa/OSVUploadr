@@ -130,7 +130,7 @@ public class JPMain extends javax.swing.JPanel {
         HttpClient client = HttpClientBuilder.create().setDefaultCookieStore(httpCookieStore).build();
         //post.setHeader("User-Agent", USER_AGENT);
         try{
-            PageContent pc = Helper.GetPageContent(url,client);
+            PageContent pc = Helper.getPageContent(url,client);
             
             List<Cookie> cookies = httpCookieStore.getCookies();
             System.out.println("Getting OSM Login page");
@@ -235,7 +235,7 @@ public class JPMain extends javax.swing.JPanel {
         
         final OAuth1RequestToken requestToken = service.getRequestToken();
         String url = service.getAuthorizationUrl(requestToken);
-        Helper.OpenBrowser(java.net.URI.create(url));
+        Helper.openBrowser(java.net.URI.create(url));
         //java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
         String pin_code = JOptionPane.showInputDialog(null, new String(r.getString("auth_window_opened").getBytes(),"UTF-8"), new String(r.getString("auth_required").getBytes(),"UTF-8"), JOptionPane.INFORMATION_MESSAGE);
         final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, pin_code);
