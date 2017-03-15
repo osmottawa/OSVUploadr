@@ -105,6 +105,81 @@ public class JPMain extends javax.swing.JPanel {
         
     }
     
+    public void setBearing(){
+        if(listDir.getSelectedObjects().length==0){
+            JOptionPane.showMessageDialog(null, new String(r.getString("select_item").getBytes(),StandardCharsets.UTF_8), new String(r.getString("attention").getBytes(),StandardCharsets.UTF_8), JOptionPane.INFORMATION_MESSAGE);
+            return; //Need selected elements to work
+        }
+        Object[] bearings = new Object[361];
+        for(int i=0;i<=360;i++){
+            bearings[i]=i;
+        }
+        String[] dirs = listDir.getSelectedItems();
+        for(String dir:dirs){
+            Object bearing_offset = JOptionPane.showInputDialog(jbRemove, new String(r.getString("set_offset").getBytes(),StandardCharsets.UTF_8), new String(r.getString("attention").getBytes(),StandardCharsets.UTF_8), JOptionPane.QUESTION_MESSAGE, null, bearings, 0);
+            if(bearing_offset==null){
+                return;
+            }
+            Thread t = new Thread(){
+                public void run(){
+                    processBearing(dir,(int)bearing_offset);
+                }
+            };
+            t.start();
+            
+        }
+    }
+    
+    public void processBearing(String directory, int Offset){
+        File dir_photos = new File(directory);
+        //filter only .jpgs
+        FilenameFilter fileNameFilter = new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+               if (name.lastIndexOf('.') > 0) {
+                    int lastIndex = name.lastIndexOf('.');
+                    String str = name.substring(lastIndex);
+                    if (str.toLowerCase(Locale.ENGLISH).equals(".jpg")) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+        File[] file_list = dir_photos.listFiles(fileNameFilter);
+        System.out.println("Pictures found:"+ String.valueOf(file_list.length));
+        
+        System.out.println("Sorting files");
+        //sort by modified time
+        Arrays.sort(file_list, new Comparator<File>(){
+        public int compare(File f1, File f2)
+        {
+            return Long.valueOf(Helper.getFileTime(f1)).compareTo(Helper.getFileTime(f2));
+        }});
+        System.out.println("End sorting");
+        
+        Double last_bearing;
+        ImageProperties imTO = null;
+        ImageProperties imFROM = null;
+        for(int i=file_list.length-1;i>=0;i--){
+            if(i==0){
+                //TODO: set last bearing 
+                continue;
+            }
+            if(imTO==null){
+                imTO = Helper.getImageProperties(file_list[i]);
+                imFROM = Helper.getImageProperties(file_list[i-1]);
+            }
+            else
+            {
+                imTO=imFROM;
+                imFROM = Helper.getImageProperties(file_list[i-1]);
+            }
+            last_bearing = (Helper.calc_bearing(imFROM.getLatitude(), imFROM.getLongitude(), imTO.getLatitude(), imTO.getLongitude())+ Offset) % 360.00;
+            System.out.println("Calculated bearing (with offset) at: " + last_bearing);
+           
+        }
+    }
+    
     private void setUILang(){
             jlDirectories.setText(new String(r.getString("Directories").getBytes(), StandardCharsets.UTF_8));
             jbAdd.setText(new String(r.getString("Add_Folder").getBytes(), StandardCharsets.UTF_8));

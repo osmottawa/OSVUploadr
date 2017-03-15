@@ -23,6 +23,7 @@ import javax.swing.event.MenuListener;
  */
 public class JFMain extends javax.swing.JFrame implements ActionListener {
     private JPInfoBox jib;
+    private JPMain jp;
     private JMenuBar menuBar;
     private JMenu mFile, mActions,mGeo;
     private JMenuItem mExit,mSetBearing;
@@ -88,7 +89,7 @@ public class JFMain extends javax.swing.JFrame implements ActionListener {
                 }
                 System.out.println("Language:" + l.getLanguage() + " Country:" + l.getCountry());                
                 
-                JPMain jp = new JPMain(l);
+                jp = new JPMain(l);
                 jib=new JPInfoBox(l);
                 jp.setVisible(true);
                 jib.setVisible(false);
@@ -158,6 +159,9 @@ public class JFMain extends javax.swing.JFrame implements ActionListener {
         if(e.getSource().equals(mExit))
         {
             System.exit(0);
+        }
+        else if(e.getSource().equals(mSetBearing)){
+            jp.setBearing();
         }
     }
 
