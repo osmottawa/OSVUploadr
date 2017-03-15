@@ -6,37 +6,98 @@
 package ca.osmcanada.osvuploadr;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.ResourceBundle;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 /**
  *
  * @author Jamie Nadeau
  */
-public class JFMain extends javax.swing.JFrame {
-    static JPInfoBox jib;
+public class JFMain extends javax.swing.JFrame implements ActionListener {
+    private JPInfoBox jib;
+    private JMenuBar menuBar;
+    private JMenu mFile, mActions,mGeo;
+    private JMenuItem mExit,mSetBearing;
+    private ResourceBundle r;
+    private Locale l;
+    
+    
     /**
      * Creates new form JFMain
      */
     public JFMain() {
         //initComponents();
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        this.setSize(640,320);
+        this.setSize(640,345);
         this.setTitle("OSVUploadr");
     }
     
     public void showInfoBox(){
         jib.setVisible(true);
-        this.setSize(640,470);
+        this.setSize(640,495);
         this.pack();
     }
+    private void setupMenu(){
+        menuBar = new JMenuBar();
+        mFile = new JMenu(new String(r.getString("Menu_File").getBytes(), StandardCharsets.UTF_8));
+        mActions = new JMenu(new String(r.getString("Menu_Actions").getBytes(), StandardCharsets.UTF_8));
+        
+        mFile.setVisible(true);       
+                
+        mExit = new JMenuItem(new String(r.getString("Exit").getBytes(), StandardCharsets.UTF_8));
+        mExit.addActionListener(this);
+        mFile.add(mExit);
+        
+        mGeo = new JMenu(new String(r.getString("Menu_Geo").getBytes(), StandardCharsets.UTF_8));
+        mActions.add(mGeo);
+        
+        mSetBearing = new JMenuItem(new String(r.getString("Menu_SetBearing").getBytes(), StandardCharsets.UTF_8));
+        mSetBearing.addActionListener(this);
+        mGeo.add(mSetBearing);
+        
+        menuBar.add(mFile);
+        menuBar.add(mActions);
+        
+        this.setJMenuBar(menuBar);
+    }
+    
     public void hideInfoBox(){
         jib.setVisible(false);
-        this.setSize(640,320);
+        this.setSize(640,345);
     }
     
     public void setInfoBoxText(String str){
         jib.setProcessingText(str);
     }
+    
+     public void run() {
+                l = Locale.getDefault();
+                try{
+                    r=ResourceBundle.getBundle("Bundle",l);
+                }
+                catch(Exception ex){
+                    System.out.println(ex.toString());
+                }
+                System.out.println("Language:" + l.getLanguage() + " Country:" + l.getCountry());                
+                
+                JPMain jp = new JPMain(l);
+                jib=new JPInfoBox(l);
+                jp.setVisible(true);
+                jib.setVisible(false);
+                this.add(jp,BorderLayout.NORTH);
+                this.add(jib,BorderLayout.SOUTH);
+                setupMenu();
+                this.setVisible(true);
+                
+     }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -88,22 +149,16 @@ public class JFMain extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(JFMain.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
+        
+        new JFMain().run();
+    }
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                Locale l = Locale.getDefault();
-                System.out.println("Language:" + l.getLanguage() + " Country:" + l.getCountry());
-                JFMain  jf =new JFMain();
-                JPMain jp = new JPMain(l);
-                jib=new JPInfoBox(l);
-                jp.setVisible(true);
-                jib.setVisible(false);
-                jf.add(jp,BorderLayout.NORTH);
-                jf.add(jib,BorderLayout.SOUTH);
-                jf.setVisible(true);
-            }
-        });
+    @Override
+    public void actionPerformed(ActionEvent e){
+        if(e.getSource().equals(mExit))
+        {
+            System.exit(0);
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
