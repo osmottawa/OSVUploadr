@@ -13,8 +13,10 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
 import java.awt.Desktop;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.Date;
 import java.util.logging.Level;
@@ -23,6 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -30,6 +37,18 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter;
+import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.ImageWriteException;
+import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.common.ImageMetadata;
+import org.apache.commons.imaging.common.RationalNumber;
+import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
+import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
+import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants;
+import org.apache.commons.imaging.formats.tiff.constants.GpsTagConstants;
+import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
+import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet;
 
 /**
  *
@@ -76,10 +95,49 @@ public final class Helper {
         return 0;
     }
     
+    public static void setBearing(File f, Double bearing)
+        throws IOException, ImageReadException, ImageWriteException{
+        
+        try (FileOutputStream fos = new FileOutputStream(f.getParent()+ File.separator+"SUPERTMPDUMP12324231.jpg",false);
+                OutputStream os = new BufferedOutputStream(fos);) {
+            
+            TiffOutputSet outputSet = null;
+
+            final ImageMetadata metadata = Imaging.getMetadata(new File(f.getAbsolutePath()));
+            final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
+            if (null != jpegMetadata) {
+                final TiffImageMetadata exif = jpegMetadata.getExif();
+
+                if (null != exif) {
+                    outputSet = exif.getOutputSet();
+                }
+            }
+            
+            if (null == outputSet) {
+                outputSet = new TiffOutputSet();
+            }
+
+            Rational r = new Rational(bearing);    
+            final TiffOutputDirectory exifDirectory = outputSet.getOrCreateGPSDirectory();
+            
+            exifDirectory.removeField(GpsTagConstants.GPS_TAG_GPS_IMG_DIRECTION );
+            exifDirectory.add(GpsTagConstants.GPS_TAG_GPS_IMG_DIRECTION, new RationalNumber(r.getNumerator(), r.getDenominator()));
+            
+
+            new ExifRewriter().updateExifMetadataLossless(f, os,
+                    outputSet);
+            //Replace file with new meta data
+            Files.move(Paths.get(f.getPath()+ File.separator+"SUPERTMPDUMP12324231.jpg"), Paths.get(f.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        }
+        
+    }
+    
+   
     public static ImageProperties getImageProperties(File f){
         try{
             Metadata metadata = ImageMetadataReader.readMetadata(f);
             GpsDirectory directory = metadata.getFirstDirectoryOfType(GpsDirectory.class);
+            
         
             ImageProperties imp = new ImageProperties();
             imp.setLatitude(directory.getGeoLocation().getLatitude());
@@ -304,3 +362,4 @@ public final class Helper {
         return Math.toDegrees( Math.atan2(Math.sin(dLongitude)*Math.cos(end_latitude), Math.cos(start_latitude)*Math.sin(end_latitude) - Math.sin(start_latitude)*Math.cos(end_latitude)*Math.cos(dLongitude)));
     }
 }
+

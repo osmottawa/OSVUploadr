@@ -56,6 +56,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.ImageWriteException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.CookieStore;
 import org.apache.http.cookie.Cookie;
@@ -157,12 +159,18 @@ public class JPMain extends javax.swing.JPanel {
         }});
         System.out.println("End sorting");
         
-        Double last_bearing;
+        Double last_bearing=0.0;
         ImageProperties imTO = null;
         ImageProperties imFROM = null;
         for(int i=file_list.length-1;i>=0;i--){
             if(i==0){
                 //TODO: set last bearing 
+                try{
+                    Helper.setBearing(file_list[i], last_bearing);
+                }
+                catch(IOException|ImageReadException|ImageWriteException ex){
+                    Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error writing exif data", ex);
+                } 
                 continue;
             }
             if(imTO==null){
@@ -176,7 +184,12 @@ public class JPMain extends javax.swing.JPanel {
             }
             last_bearing = (Helper.calc_bearing(imFROM.getLatitude(), imFROM.getLongitude(), imTO.getLatitude(), imTO.getLongitude())+ Offset) % 360.00;
             System.out.println("Calculated bearing (with offset) at: " + last_bearing);
-           
+            try{
+                Helper.setBearing(file_list[i], last_bearing);
+            }
+            catch(IOException|ImageReadException|ImageWriteException ex){
+                Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error writing exif data", ex);
+            } 
         }
     }
     
