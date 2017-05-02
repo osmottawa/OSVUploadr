@@ -10,6 +10,7 @@ import ca.osmcanada.osvuploadr.struct.ImageProperties;
 import ca.osmcanada.osvuploadr.struct.PageContent;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
+import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
 import java.awt.Desktop;
@@ -82,6 +83,15 @@ public final class Helper {
             Metadata metadata = ImageMetadataReader.readMetadata(f);
             ExifSubIFDDirectory directory  = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
             Date date  = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+            if(date==null){
+                date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED);
+                Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time Original Exif using Digitized");
+            }
+            if (date==null){
+                final ExifIFD0Directory dir = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+                date = dir.getDate(ExifIFD0Directory.TAG_DATETIME);
+                Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time digitized Exif using file time(may cause issues in ordering)");
+            }
             return date.getTime();
         }
         catch(com.drew.imaging.ImageProcessingException ex)
@@ -149,7 +159,14 @@ public final class Helper {
             {
                 try
                 {
-                    imp.setCompass(directory.getDouble(directory.TAG_IMG_DIRECTION));
+                    Double cmp = directory.getDouble(directory.TAG_IMG_DIRECTION);
+                    if(cmp==null){
+                        imp.setCompass(-1.0);
+                    }
+                    else
+                    {
+                        imp.setCompass(cmp);
+                    }
                 }
                 catch(Exception ex)
                 {
