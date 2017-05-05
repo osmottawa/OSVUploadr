@@ -78,12 +78,20 @@ public final class Helper {
             Metadata metadata = ImageMetadataReader.readMetadata(f);
             ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
             Date date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL, directory.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME_ORIGINAL), null);
+            final ExifIFD0Directory dir = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
             if(date==null){
+                //Some images don't follow the standard and put the original time in the IF0 Directory
+                date = dir.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL, dir.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME_ORIGINAL), null);
+            } 
+            if(date == null){
                 date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED, directory.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME_DIGITIZED), null);
+                if (date == null){
+                    //Some images don't follow the standard and put the digitized time in the IF0 Directory
+                    date = dir.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED, dir.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME_DIGITIZED), null);
+                }
                 Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time Original Exif using Digitized");
             }
-            if (date==null){
-                final ExifIFD0Directory dir = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            if (date == null){                
                 date = dir.getDate(ExifIFD0Directory.TAG_DATETIME, directory.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME), null);
                 Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time digitized Exif using file time (may cause issues in ordering)");
             }
