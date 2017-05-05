@@ -28,16 +28,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.ImageWriteException;
@@ -46,7 +42,6 @@ import org.apache.commons.imaging.common.ImageMetadata;
 import org.apache.commons.imaging.common.RationalNumber;
 import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
-import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants;
 import org.apache.commons.imaging.formats.tiff.constants.GpsTagConstants;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet;
@@ -81,22 +76,22 @@ public final class Helper {
     public static long getFileTime(File f){
         try{
             Metadata metadata = ImageMetadataReader.readMetadata(f);
-            ExifSubIFDDirectory directory  = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-            Date date  = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+            ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+            Date date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL, directory.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME_ORIGINAL), null);
             if(date==null){
-                date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED);
+                date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED, directory.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME_DIGITIZED), null);
                 Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time Original Exif using Digitized");
             }
             if (date==null){
                 final ExifIFD0Directory dir = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-                date = dir.getDate(ExifIFD0Directory.TAG_DATETIME);
-                Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time digitized Exif using file time(may cause issues in ordering)");
+                date = dir.getDate(ExifIFD0Directory.TAG_DATETIME, directory.getString(ExifSubIFDDirectory.TAG_SUBSECOND_TIME), null);
+                Logger.getLogger(JPMain.class.getName()).log(Level.INFO, "Couldn't find Date time digitized Exif using file time (may cause issues in ordering)");
             }
             return date.getTime();
         }
         catch(com.drew.imaging.ImageProcessingException ex)
         {
-            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error processing image properties(exif data)" + f.getAbsolutePath(), ex);
+            Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error processing image properties (exif data)" + f.getAbsolutePath(), ex);
         }
         catch(IOException ex)
         {
@@ -108,7 +103,7 @@ public final class Helper {
     public static void setBearing(File f, Double bearing)
         throws IOException, ImageReadException, ImageWriteException{
         
-        try (FileOutputStream fos = new FileOutputStream(f.getParent()+ File.separator+"SUPERTMPDUMP12324231.jpg",false);
+        try (FileOutputStream fos = new FileOutputStream(f.getParent() + File.separator + "SUPERTMPDUMP12324231.jpg", false);
                 OutputStream os = new BufferedOutputStream(fos);) {
             
             TiffOutputSet outputSet = null;
@@ -134,10 +129,13 @@ public final class Helper {
             exifDirectory.add(GpsTagConstants.GPS_TAG_GPS_IMG_DIRECTION, new RationalNumber(r.getNumerator(), r.getDenominator()));
             
 
-            new ExifRewriter().updateExifMetadataLossless(f, os,
-                    outputSet);
+            new ExifRewriter().updateExifMetadataLossless(f, os, outputSet);
             //Replace file with new meta data
-            Files.move(Paths.get(f.getPath()+ File.separator+"SUPERTMPDUMP12324231.jpg"), Paths.get(f.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            Files.move(
+                    Paths.get(f.getParent() + File.separator + "SUPERTMPDUMP12324231.jpg"),
+                    Paths.get(f.getAbsolutePath()),
+                    StandardCopyOption.REPLACE_EXISTING
+            );
         }
         
     }

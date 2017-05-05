@@ -11,8 +11,6 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
@@ -57,7 +55,7 @@ public class HelperTest {
     public void testGetFileTime() {
         System.out.println("getFileTime");
         File f = new File("tests" + File.separator+ "test1" + File.separator + "2017_01_05_12_09_36_994.jpg");
-        long expResult = 1483618177000L;
+        long expResult = 1483618177200L;
         long result = Helper.getFileTime(f);
         assertEquals(expResult, result);
     }
