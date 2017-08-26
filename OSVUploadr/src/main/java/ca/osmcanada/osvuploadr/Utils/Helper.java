@@ -111,7 +111,7 @@ public final class Helper {
     public static void setBearing(File f, Double bearing)
         throws IOException, ImageReadException, ImageWriteException{
         
-        try (FileOutputStream fos = new FileOutputStream(f.getParent() + File.separator + "SUPERTMPDUMP12324231.jpg", false);
+        try (FileOutputStream fos = new FileOutputStream(f.getParentFile().getAbsolutePath() + File.separator + "SUPERTMPDUMP12324231.jpg", false);
                 OutputStream os = new BufferedOutputStream(fos);) {
             
             TiffOutputSet outputSet = null;
