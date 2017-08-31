@@ -72,10 +72,10 @@ import org.apache.http.impl.client.HttpClientBuilder;
 public class JPMain extends javax.swing.JPanel {
 
     private final String BASE_URL="https://www.openstreetmap.org/";
-    private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
-    private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
-    private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
-    private final String URL_ACCESS = "http://openstreetview.com/auth/openstreetmap/client_auth";
+    private final String URL_SEQUENCE = "http://openstreetcam.com/1.0/sequence/";
+    private final String URL_PHOTO = "http://openstreetcam.com/1.0/photo/";
+    private final String URL_FINISH = "http://openstreetcam.com/1.0/sequence/finished-uploading/";
+    private final String URL_ACCESS = "http://openstreetcam.com/auth/openstreetmap/client_auth";
     private final String API_KEY = "rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw";
     private final String API_SECRET = "rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S";
     private String last_dir ="";
@@ -375,8 +375,9 @@ public class JPMain extends javax.swing.JPanel {
             con.setReadTimeout(5000);
             
             StringJoiner sj = new StringJoiner("&");
-            for(Map.Entry<String,String> entry : arguments.entrySet())
+            for(Map.Entry<String,String> entry : arguments.entrySet()){
                 sj.add(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8.toString()) + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8.toString()));
+            }
             byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
             int length = out.length;
             
@@ -455,7 +456,7 @@ public class JPMain extends javax.swing.JPanel {
         }
     }
     
-    private void sendAuthTokens(String accessToken, String accessSecret){
+    private String sendAuthTokens(String accessToken, String accessSecret){
         try
         {
             URL url = new URL(URL_ACCESS);
@@ -493,11 +494,14 @@ public class JPMain extends javax.swing.JPanel {
 
             String data;
             data = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+            String access_token = data.substring(data.indexOf("\"access_token\":\"")+16,data.indexOf("\"", data.indexOf("\"access_token\":\"")+16));
             http.disconnect();
+            return access_token;
             
         }
         catch(Exception ex){
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, null, ex);
+            return "";
         }
     }
     private void sendFinished(long Sequence_id, String accessToken)
@@ -566,6 +570,7 @@ public class JPMain extends javax.swing.JPanel {
             StringJoiner sj = new StringJoiner("&");
             for(Map.Entry<String,String> entry : arguments.entrySet())
                 sj.add(URLEncoder.encode(entry.getKey(), "UTF-8") + "=" + URLEncoder.encode(entry.getValue(), "UTF-8"));
+            
             byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
             int length = out.length;
             System.out.println("Sending request:" + sj.toString());
@@ -1062,12 +1067,14 @@ public class JPMain extends javax.swing.JPanel {
                         return;
                         
                 }
-                Path targetPath = Paths.get("./access_token.txt");
-                byte[] bytes = token.split("\\|")[0].getBytes(StandardCharsets.UTF_8);
-                Files.write(targetPath, bytes, StandardOpenOption.CREATE); 
+                Path targetPath = Paths.get(decodedPath + File.pathSeparator +"access_token.txt");
                 accessToken = token.split("\\|")[0];
                 String accessSecret = token.split("\\|")[1];
-                sendAuthTokens(accessToken,accessSecret);                
+                
+                accessToken=sendAuthTokens(accessToken,accessSecret);
+                
+                byte[] bytes = accessToken.getBytes(StandardCharsets.UTF_8);
+                Files.write(targetPath, bytes, StandardOpenOption.CREATE);                
             }
             catch(Exception ex)
             {

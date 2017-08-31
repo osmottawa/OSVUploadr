@@ -337,7 +337,7 @@ public final class Helper {
         BufferedReader rd=null;
         StringBuffer result=null;
         try{
-            rd = new BufferedReader( new InputStreamReader(response.getEntity().getContent(),response.getEntity().getContentEncoding().getValue()));
+            rd = new BufferedReader( new InputStreamReader(response.getEntity().getContent(),"UTF-8"));//response.getEntity().getContentEncoding().getValue()));
 
             result = new StringBuffer();
             String line = "";
