@@ -122,6 +122,9 @@ public class JPMain extends javax.swing.JPanel {
             if(bearing_offset==null){
                 return;
             }
+            JFMain topframe = (JFMain)SwingUtilities.getWindowAncestor(this);
+            topframe.showInfoBox();
+            topframe.setInfoBoxText("Sorting items, please wait");
             Thread t = new Thread(){
                 public void run(){
                     processBearing(dir,(int)bearing_offset);
@@ -133,6 +136,7 @@ public class JPMain extends javax.swing.JPanel {
     }
     
     public void processBearing(String directory, int Offset){
+        JFMain topframe = (JFMain)SwingUtilities.getWindowAncestor(this);
         File dir_photos = new File(directory);
         //filter only .jpgs
         FilenameFilter fileNameFilter = new FilenameFilter() {
@@ -163,9 +167,11 @@ public class JPMain extends javax.swing.JPanel {
         ImageProperties imTO = null;
         ImageProperties imFROM = null;
         for(int i=file_list.length-1;i>=0;i--){
+            topframe.setInfoBoxText("Setting Bearing for:" + file_list[i]);
             if(i==0){
                 //TODO: set last bearing 
                 try{
+                    
                     Helper.setBearing(file_list[i], last_bearing);
                 }
                 catch(IOException|ImageReadException|ImageWriteException ex){
@@ -184,6 +190,7 @@ public class JPMain extends javax.swing.JPanel {
             }
             last_bearing = (Helper.calc_bearing(imFROM.getLatitude(), imFROM.getLongitude(), imTO.getLatitude(), imTO.getLongitude())+ Offset) % 360.00;
             System.out.println("Calculated bearing (with offset) at: " + last_bearing);
+            topframe.setInfoBoxText("<html>Setting Bearing for:" + file_list[i] + "<br/>" +  last_bearing + "</html>");
             try{
                 Helper.setBearing(file_list[i], last_bearing);
             }
@@ -191,6 +198,7 @@ public class JPMain extends javax.swing.JPanel {
                 Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "Error writing exif data", ex);
             } 
         }
+        topframe.setInfoBoxText("Done");
     }
     
     private void setUILang(){
@@ -974,25 +982,33 @@ public class JPMain extends javax.swing.JPanel {
         int returnVal = fc.showSaveDialog(this);
         if(returnVal == JFileChooser.APPROVE_OPTION) {
             if(fc.getSelectedFiles().length==1){
-                int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(), StandardCharsets.UTF_8), new String(r.getString("add_subfolders").getBytes(), StandardCharsets.UTF_8), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                if(response == JOptionPane.NO_OPTION){
-                    File folder = fc.getSelectedFile();
-                    listDir.add(folder.getPath());
-                    last_dir=folder.getPath();
-                }
-                else if (response == JOptionPane.YES_OPTION)
-                {
-                    //Get a list of subdirectories
-                    String[] subDirs = fc.getSelectedFile().list(new FilenameFilter(){
+                //Get a list of subdirectories
+                String[] subDirs = fc.getCurrentDirectory().list(new FilenameFilter(){
                         @Override
                         public boolean accept(File current, String name){
                             return new File(current,name).isDirectory();
                         }
-                    });
+                });
+                if(subDirs.length>0){
+                    int response = JOptionPane.showConfirmDialog(null, new String(r.getString("immediate_sub_folders").getBytes(), StandardCharsets.UTF_8), new String(r.getString("add_subfolders").getBytes(), StandardCharsets.UTF_8), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if(response == JOptionPane.NO_OPTION){
+                        File folder = fc.getCurrentDirectory();
+                        listDir.add(folder.getPath());
+                        last_dir=folder.getPath();
+                    }
+                    else if (response == JOptionPane.YES_OPTION)
+                    {
+                    
                 
-                    for(String subDir: subDirs){
-                        listDir.add(new File(fc.getSelectedFile() + File.separator + subDir).getPath());
-                    }                
+                        for(String subDir: subDirs){
+                            listDir.add(new File(fc.getSelectedFile() + File.separator + subDir).getPath());
+                        }                
+                    }
+                }
+                else{
+                    File folder = fc.getCurrentDirectory();
+                    listDir.add(folder.getPath());
+                    last_dir=folder.getPath();
                 }
             }
             else if(fc.getSelectedFiles().length > 1)
