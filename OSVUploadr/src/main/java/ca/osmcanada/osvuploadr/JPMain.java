@@ -72,10 +72,10 @@ import org.apache.http.impl.client.HttpClientBuilder;
 public class JPMain extends javax.swing.JPanel {
 
     private final String BASE_URL="https://www.openstreetmap.org/";
-    private final String URL_SEQUENCE = "http://openstreetcam.com/1.0/sequence/";
-    private final String URL_PHOTO = "http://openstreetcam.com/1.0/photo/";
-    private final String URL_FINISH = "http://openstreetcam.com/1.0/sequence/finished-uploading/";
-    private final String URL_ACCESS = "http://openstreetcam.com/auth/openstreetmap/client_auth";
+    private final String URL_SEQUENCE = "http://openstreetview.com/1.0/sequence/";
+    private final String URL_PHOTO = "http://openstreetview.com/1.0/photo/";
+    private final String URL_FINISH = "http://openstreetview.com/1.0/sequence/finished-uploading/";
+    private final String URL_ACCESS = "http://openstreetview.com/auth/openstreetmap/client_auth";
     private final String API_KEY = "rBWV8Eaottv44tXfdLofdNvVemHOL62Lsutpb9tw";
     private final String API_SECRET = "rpmeZIp49sEjjcz91X9dsY0vD1PpEduixuPy8T6S";
     private String last_dir ="";
@@ -1043,7 +1043,7 @@ public class JPMain extends javax.swing.JPanel {
         {
             Logger.getLogger(JPMain.class.getName()).log(Level.SEVERE, "decodePath", ex);
         }
-        File id = new File(decodedPath + "/access_token.txt");
+        File id = new File(decodedPath + File.separator + "access_token.txt");
         String accessToken="";
         System.out.println("id_file exists:"+ id.exists());
         if(!id.exists())
@@ -1083,7 +1083,7 @@ public class JPMain extends javax.swing.JPanel {
                         return;
                         
                 }
-                Path targetPath = Paths.get(decodedPath + File.pathSeparator +"access_token.txt");
+                Path targetPath = Paths.get(decodedPath + File.separator + "access_token.txt");
                 accessToken = token.split("\\|")[0];
                 String accessSecret = token.split("\\|")[1];
                 
